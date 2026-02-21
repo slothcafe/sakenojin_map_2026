@@ -1,11 +1,37 @@
 <template>
   <div class="app-container">
     <header class="header">
-      <h1>酒の陣 ブースマップ</h1>
+      <h1>酒の陣</h1>
       <button @click="resetVisited" class="reset-btn">履歴リセット</button>
     </header>
 
-    <main class="map-container">
+    <!-- タブ切り替え -->
+    <nav class="tab-bar">
+      <button
+        class="tab-btn"
+        :class="{ 'is-active': currentView === 'map' }"
+        @click="currentView = 'map'"
+      >
+        🗺 マップ
+      </button>
+      <button
+        class="tab-btn"
+        :class="{ 'is-active': currentView === 'progress' }"
+        @click="currentView = 'progress'"
+      >
+        📊 進捗
+      </button>
+    </nav>
+
+    <!-- マップ画面 -->
+    <main v-if="currentView === 'map'" class="map-container">
+      <div class="legend">
+        <div v-for="r in regionDataList" :key="r.id" class="legend-item">
+          <div :style="{ backgroundColor: r.color, borderColor: r.stroke }" class="legend-color-box"></div>
+          <span>{{ r.name }}</span>
+        </div>
+      </div>
+
       <svg
         :width="mapWidth"
         :height="mapHeight"
@@ -14,34 +40,93 @@
         <g v-for="booth in validBooths" :key="booth.id">
           <!-- Booth background -->
           <rect
+            v-if="!booth.isEmpty"
             :x="booth.x"
             :y="booth.y"
-            width="40"
-            height="40"
+            width="64"
+            height="64"
             class="booth-rect"
-            :class="{
-              'is-visited': visitedIds.has(booth.id),
-              'is-selected': selectedBoothId === booth.id
-            }"
+            :style="getBoothStyle(booth)"
             @click="selectBooth(booth)"
           />
+          <!-- 空ブースの場合は背景枠だけ描画（クリック不可） -->
+          <rect
+            v-else
+            :x="booth.x"
+            :y="booth.y"
+            width="64"
+            height="64"
+            class="booth-rect is-empty"
+          />
+
           <!-- Booth text / ID -->
           <text
-            :x="booth.x + 20"
-            :y="booth.y + 24"
+            v-if="!booth.isEmpty"
+            :x="booth.x + 32"
+            :y="booth.y + 16"
             text-anchor="middle"
             class="booth-text"
-            :class="{'is-visited-text': visitedIds.has(booth.id)}"
           >
             {{ booth.id }}
           </text>
+
+          <!-- Visited badge -->
+          <text
+            v-if="!booth.isEmpty && visitRecords[booth.id]?.visited"
+            :x="booth.x + 52"
+            :y="booth.y + 16"
+            text-anchor="middle"
+            class="visited-check"
+          >
+            ✔
+          </text>
+
+          <template v-if="!booth.isEmpty">
+            <text
+              v-for="(line, index) in booth.nameLines"
+              :key="'name-' + index"
+              :x="booth.x + 32"
+              :y="booth.y + 44 - (booth.nameLines.length - 1) * 8 + index * 16"
+              text-anchor="middle"
+              class="booth-name-text"
+              :class="{
+                'is-small-text': booth.name === 'ラグーン ブリュワリー',
+                'is-medium-text': booth.name === 'マスカガミ'
+              }"
+            >
+              {{ line }}
+            </text>
+          </template>
         </g>
+
+        <!-- 選択中ブースのハイライト枠（常に手前に表示） -->
+        <rect
+          v-if="selectedBooth && !selectedBooth.isEmpty"
+          :x="selectedBooth.x"
+          :y="selectedBooth.y"
+          width="64"
+          height="64"
+          fill="none"
+          stroke="black"
+          stroke-width="4"
+          rx="4"
+          class="selected-highlight"
+          pointer-events="none"
+        />
       </svg>
+    </main>
+
+    <!-- 進捗画面 -->
+    <main v-else-if="currentView === 'progress'" class="progress-container">
+      <ProgressView
+        :breweries="breweries"
+        :visitRecords="visitRecords"
+      />
     </main>
 
     <!-- Bottom Panel -->
     <transition name="slide-up">
-      <div v-if="selectedBooth" class="bottom-panel">
+      <div v-if="selectedBooth && !selectedBooth.isEmpty" class="bottom-panel">
         <div class="panel-header">
           <h2>{{ selectedBooth.name }}</h2>
           <button class="close-btn" @click="selectedBoothId = null">×</button>
@@ -59,10 +144,10 @@
           </div>
           <button
             class="visit-btn"
-            :class="{ 'is-visited-btn': visitedIds.has(selectedBooth.id) }"
+            :class="{ 'is-visited-btn': visitRecords[selectedBooth.id]?.visited }"
             @click="toggleVisited(selectedBooth.id)"
           >
-            {{ visitedIds.has(selectedBooth.id) ? '訪問済みを取り消す' : '訪問済みにする' }}
+            {{ visitRecords[selectedBooth.id]?.visited ? '訪問済みを取り消す' : '訪問済みにする' }}
           </button>
         </div>
       </div>
@@ -72,9 +157,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import breweriesData from '../niigata_sakenojin_breweries_list.json'
+import ProgressView from './components/ProgressView.vue'
 
 // --- Constants ---
-const BOOTH_SIZE = 40
+const BOOTH_SIZE = 64
 const BLOCK_GAP_X = 24
 const BLOCK_GAP_Y = 32
 const BLOCKS_X = 7
@@ -86,72 +173,171 @@ const INNER_ROWS = 2
 const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
 const mapHeight = BLOCKS_Y * (INNER_ROWS * BOOTH_SIZE) + (BLOCKS_Y - 1) * BLOCK_GAP_Y
 
+// Region Display Colors
+const regionDataList = [
+  { id: 'kaetsu', name: '下越', color: '#D6A9B8', stroke: '#C293A4' },
+  { id: 'chuetsu', name: '中越', color: '#A9C8A9', stroke: '#8EAF8E' },
+  { id: 'joetsu', name: '上越', color: '#AEB9C8', stroke: '#8E9BAC' },
+  { id: 'sado', name: '佐渡', color: '#D4B84F', stroke: '#B29739' }
+]
+
 // --- State ---
-const booths = ref([])
-const visitedIds = ref(new Set())
+const baseBooths = ref([]) // 座標のみを持つBooth配列
+const breweries = ref(new Map()) // BreweryドメインモデルのMap
+const visitRecords = ref({}) // 訪問記録
 const selectedBoothId = ref(null)
+const currentView = ref('map') // 'map' | 'progress'
 
-// --- Initialization ---
-const initMap = () => {
-  const generated = []
-  let layoutIndex = 0
-
-  for (let by = 0; by < BLOCKS_Y; by++) {
-    for (let bx = 0; bx < BLOCKS_X; bx++) {
-      for (let iy = 0; iy < INNER_ROWS; iy++) {
-        for (let ix = 0; ix < INNER_COLS; ix++) {
-          const x = bx * (INNER_COLS * BOOTH_SIZE + BLOCK_GAP_X) + ix * BOOTH_SIZE
-          const y = by * (INNER_ROWS * BOOTH_SIZE + BLOCK_GAP_Y) + iy * BOOTH_SIZE
-
-          generated.push({ layoutIndex, x, y })
-          layoutIndex++
-        }
-      }
-    }
+const getBoothStyle = (booth) => {
+  if (booth.isEmpty) return {}
+  const regionDef = regionDataList.find(r => r.id === booth.region)
+  let fill = '#e5e7eb'
+  let stroke = '#ffffff'
+  
+  if (regionDef) {
+    fill = regionDef.color
+    stroke = regionDef.stroke
   }
 
-  // Generate 82 valid booths up to layoutIndex 81
-  const valid = generated.slice(0, 82).map((b, index) => {
-    const id = String(index + 1)
-    
-    // Default Dummy Data
-    let name = `ダミー酒造 ${id}`
-    let sweetDry = (Math.random() * 4 - 2).toFixed(1)
-    let lightRich = (Math.random() * 4 - 2).toFixed(1)
+  const isVisited = visitRecords.value[booth.id]?.visited
 
-    // Apply specific dummy data if ID is 75
-    if (id === '75') {
-      name = 'ダミー酒造(株)'
-      sweetDry = 1.2
-      lightRich = -0.8
+  return {
+    fill: fill,
+    stroke: stroke,
+    strokeWidth: '2px',
+    opacity: isVisited ? 1 : 0.3
+  }
+}
+
+// --- Helper ---
+const formatNameWithLineBreaks = (rawName) => {
+  let clean = rawName.replace(/(株式会社|\(株\)|有限会社|\(有\)|合名会社|\(名\)|合資会社|\(資\)|合同会社|\(同\))/g, '').trim()
+  
+  if (clean.includes(' ')) return clean.split(' ')
+  if (clean.includes('　')) return clean.split('　')
+  if (clean === 'よしかわ杜氏の郷') return ['よしかわ', '杜氏の郷']
+
+  const suffixes = ['酒造場', '酒造店', '醸造所', '酒造', '醸造', 'ブリュワリー']
+  for (const suffix of suffixes) {
+    if (clean.endsWith(suffix) && clean !== suffix) {
+      const prefix = clean.slice(0, -suffix.length)
+      return [prefix, suffix]
     }
+  }
+  
+  if (clean.length >= 7) {
+    const mid = Math.ceil(clean.length / 2)
+    return [clean.slice(0, mid), clean.slice(mid)]
+  }
 
-    return {
-      ...b,
-      id,
-      name,
-      estimated: {
-        sweetDry: Number(sweetDry),
-        lightRich: Number(lightRich)
+  return [clean]
+}
+
+const generateDummyTaste = (brewery) => {
+  return {
+    sweetDry: Number((Math.random() * 4 - 2).toFixed(1)),
+    lightRich: Number((Math.random() * 4 - 2).toFixed(1))
+  }
+}
+
+// --- Initialization ---
+const generateGridCoordinates = () => {
+  const COLS = BLOCKS_X * INNER_COLS // 14
+  const ROWS = BLOCKS_Y * INNER_ROWS // 6
+  
+  const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null))
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const bx = Math.floor(c / INNER_COLS)
+      const by = Math.floor(r / INNER_ROWS)
+      const x = bx * (INNER_COLS * BOOTH_SIZE + BLOCK_GAP_X) + (c % INNER_COLS) * BOOTH_SIZE
+      const y = by * (INNER_ROWS * BOOTH_SIZE + BLOCK_GAP_Y) + (r % INNER_ROWS) * BOOTH_SIZE
+      grid[r][c] = { x, y }
+    }
+  }
+  return { grid, ROWS, COLS }
+}
+
+const generateBooths = (grid, ROWS, COLS) => {
+  const generatedBooths = []
+  let currentId = 1
+  let cellCount = 0
+
+  for (let r = ROWS - 1; r >= 0; r--) {
+    for (let c = COLS - 1; c >= 0; c--) {
+      const { x, y } = grid[r][c]
+      let isEmptyBooth = false
+
+      if (cellCount === 34 && currentId === 35) {
+        isEmptyBooth = true
+      } else if (cellCount === 48 && currentId === 48) {
+        isEmptyBooth = true
       }
-    }
-  })
 
-  booths.value = valid
+      if (isEmptyBooth) {
+        generatedBooths.push({ id: `empty-${cellCount}`, x, y, isEmpty: true })
+      } else if (currentId <= 82) {
+        generatedBooths.push({ id: String(currentId), x, y, isEmpty: false })
+        currentId++
+      }
+      cellCount++
+    }
+  }
+  return generatedBooths
+}
+
+const attachBreweries = () => {
+  const breweryMap = new Map()
+  for (const b of breweriesData) {
+    const rawName = b['酒造名']
+    const cleanName = rawName.replace(/(株式会社|\(株\)|有限会社|\(有\)|合名会社|\(名\)|合資会社|\(資\)|合同会社|\(同\))/g, '').trim()
+    
+    const regionNameJa = b['地域'] || b['地区'] || null // 日本語地域名（「上越」「中越」「下越」「佐渡」）
+    let regionId = regionNameJa
+    if (regionId === '下越') regionId = 'kaetsu';
+    else if (regionId === '中越') regionId = 'chuetsu';
+    else if (regionId === '上越') regionId = 'joetsu';
+    else if (regionId === '佐渡') regionId = 'sado';
+
+    breweryMap.set(b.id, {
+      id: b.id,
+      name: cleanName,
+      rawName: rawName,
+      region: regionId,
+      regionName: regionNameJa, // 集計ロジック用（日本語地域名を保持）
+      taste: generateDummyTaste(b)
+    })
+  }
+  breweries.value = breweryMap
+}
+
+const initMap = () => {
+  const { grid, ROWS, COLS } = generateGridCoordinates()
+  baseBooths.value = generateBooths(grid, ROWS, COLS)
+  attachBreweries()
 }
 
 const loadVisited = () => {
   const stored = localStorage.getItem('sake_visited')
   if (stored) {
     try {
-      const arr = JSON.parse(stored)
-      visitedIds.value = new Set(arr)
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        // Migrate array (old format) to object (new format)
+        const migrated = {}
+        for (const id of parsed) {
+          migrated[id] = { visited: true }
+        }
+        visitRecords.value = migrated
+      } else {
+        visitRecords.value = parsed
+      }
     } catch(e) {}
   }
 }
 
 const saveVisited = () => {
-  localStorage.setItem('sake_visited', JSON.stringify(Array.from(visitedIds.value)))
+  localStorage.setItem('sake_visited', JSON.stringify(visitRecords.value))
 }
 
 onMounted(() => {
@@ -160,31 +346,53 @@ onMounted(() => {
 })
 
 // --- Computed ---
-const validBooths = computed(() => booths.value)
+const mapBoothsWithBreweryData = computed(() => {
+  return baseBooths.value.map(booth => {
+    if (booth.isEmpty) {
+      return { ...booth }
+    }
+    const brewery = breweries.value.get(booth.id)
+    const name = brewery ? brewery.name : `不明 ${booth.id}`
+    const rawName = brewery ? brewery.rawName : `不明 ${booth.id}`
+    
+    return {
+      ...booth,
+      name,
+      nameLines: formatNameWithLineBreaks(rawName),
+      estimated: brewery ? brewery.taste : { sweetDry: 0, lightRich: 0 },
+      region: brewery ? brewery.region : null
+    }
+  })
+})
+
+const validBooths = computed(() => mapBoothsWithBreweryData.value)
 
 const selectedBooth = computed(() => {
-  return booths.value.find(b => b.id === selectedBoothId.value) || null
+  return mapBoothsWithBreweryData.value.find(b => b.id === selectedBoothId.value) || null
 })
 
 // --- Actions ---
 const selectBooth = (booth) => {
+  if (booth.isEmpty) return
   selectedBoothId.value = booth.id
 }
 
 const toggleVisited = (id) => {
-  const newSet = new Set(visitedIds.value)
-  if (newSet.has(id)) {
-    newSet.delete(id)
-  } else {
-    newSet.add(id)
+  const record = visitRecords.value[id] || { visited: false }
+  visitRecords.value = {
+    ...visitRecords.value,
+    [id]: {
+      ...record,
+      visited: !record.visited,
+      visitedAt: !record.visited ? new Date().toISOString() : undefined
+    }
   }
-  visitedIds.value = newSet
   saveVisited()
 }
 
 const resetVisited = () => {
   if (confirm('訪問履歴をすべてリセットしますか？')) {
-    visitedIds.value = new Set()
+    visitRecords.value = {}
     saveVisited()
     selectedBoothId.value = null
   }
@@ -201,6 +409,39 @@ const resetVisited = () => {
   background-color: #f9fafb;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
+}
+
+/* Tab Bar */
+.tab-bar {
+  display: flex;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn.is-active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* Progress Container */
+.progress-container {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f9fafb;
 }
 
 /* Header */
@@ -254,24 +495,70 @@ const resetVisited = () => {
   transition: all 0.2s ease;
 }
 
-.booth-rect.is-visited {
-  fill: #4caf50; /* visited green */
+.booth-rect.is-empty {
+  fill: transparent; /* 空枠は透明か薄い枠線のみなどにする */
+  stroke: #e5e7eb;
+  stroke-dasharray: 4; /* 点線表現などで空きを示す */
+  cursor: default;
 }
 
-.booth-rect.is-selected {
-  stroke: #2563eb; /* selected border */
-  stroke-width: 3px;
+.visited-check {
+  font-size: 14px;
+  fill: #e11d48;
+  font-weight: bold;
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-color-box {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 2px;
+}
+
+.legend-item span {
+  font-size: 14px;
+  color: #4b5563;
+  font-weight: bold;
 }
 
 .booth-text {
-  font-size: 12px;
+  font-size: 14px;
   fill: #4b5563;
   font-weight: bold;
   pointer-events: none; /* so click passes through to rect */
 }
-.is-visited-text {
-  fill: #ffffff;
+
+.booth-name-text {
+  font-size: 16px;
+  fill: #4b5563;
+  font-weight: bold;
+  pointer-events: none;
 }
+
+.booth-name-text.is-small-text {
+  font-size: 10px;
+}
+
+.booth-name-text.is-medium-text {
+  font-size: 12px;
+}
+
+/* .is-visited-text removed */
 
 /* Bottom Panel */
 .bottom-panel {
