@@ -25,10 +25,58 @@
 
     <!-- マップ画面 -->
     <main v-if="currentView === 'map'" class="map-container">
-      <div class="legend">
+      <div class="map-controls">
+        <div class="mode-toggle">
+          <button 
+            class="mode-btn" 
+            :class="{ 'is-active': displayMode === 'normal' }"
+            @click="displayMode = 'normal'"
+          >
+            通常
+          </button>
+          <button 
+            class="mode-btn" 
+            :class="{ 'is-active': displayMode === 'heatmap' }"
+            @click="displayMode = 'heatmap'"
+          >
+            ヒートマップ
+          </button>
+        </div>
+
+        <div v-if="displayMode === 'heatmap'" class="axis-selector">
+          <button 
+            v-for="axis in [
+              { id: 'sweetDry', name: '甘辛' },
+              { id: 'lightRich', name: '淡濃' },
+              { id: 'aroma', name: '香り' }
+            ]" 
+            :key="axis.id"
+            class="axis-btn"
+            :class="{ 'is-active': heatmapAxis === axis.id }"
+            @click="heatmapAxis = axis.id"
+          >
+            {{ axis.name }}
+          </button>
+        </div>
+
+        <div v-if="displayMode === 'heatmap'" class="heatmap-legend">
+          <span class="legend-label min">{{ heatmapAxis === 'aroma' ? '控えめ' : (heatmapAxis === 'lightRich' ? '淡麗' : '甘口') }}</span>
+          <div class="legend-gradient" :class="heatmapAxis + '-gradient'"></div>
+          <span class="legend-label max">{{ heatmapAxis === 'aroma' ? '華やか' : (heatmapAxis === 'lightRich' ? '濃醇' : '辛口') }}</span>
+        </div>
+      </div>
+
+      <div v-if="displayMode === 'normal'" class="legend">
         <div v-for="r in regionDataList" :key="r.id" class="legend-item">
           <div :style="{ backgroundColor: r.color, borderColor: r.stroke }" class="legend-color-box"></div>
           <span>{{ r.name }}</span>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-label">訪問計画:</span>
+          <span class="stat-val">{{ visitedBreweryIds.length }} / {{ breweries.size }} 蔵</span>
         </div>
       </div>
 
@@ -72,7 +120,7 @@
 
           <!-- Visited badge -->
           <text
-            v-if="!booth.isEmpty && visitRecords[booth.id]?.visited"
+            v-if="!booth.isEmpty && visitedBreweryIds.includes(booth.id)"
             :x="booth.x + 52"
             :y="booth.y + 16"
             text-anchor="middle"
@@ -124,31 +172,90 @@
       />
     </main>
 
-    <!-- Bottom Panel -->
+    <!-- Bottom Panel (Modal) -->
     <transition name="slide-up">
       <div v-if="selectedBooth && !selectedBooth.isEmpty" class="bottom-panel">
         <div class="panel-header">
-          <h2>{{ selectedBooth.name }}</h2>
+          <div class="title-row">
+            <h2>{{ selectedBooth.name }}</h2>
+            <span class="booth-id-badge">No.{{ selectedBooth.id }}</span>
+          </div>
           <button class="close-btn" @click="selectedBoothId = null">×</button>
         </div>
+        
         <div class="panel-body">
-          <div class="tasting-info">
-            <div class="tasting-item">
-              <span class="label">甘辛度</span>
-              <span class="val">{{ selectedBooth.estimated.sweetDry > 0 ? '+' : '' }}{{ selectedBooth.estimated.sweetDry }}</span>
+          <div class="taste-bars">
+            <!-- 甘辛 -->
+            <div class="taste-row">
+              <div class="taste-header">
+                <span class="taste-title">甘辛</span>
+                <span class="taste-current-label">{{ getSweetDryLabel(selectedBooth.estimated.sweetDry) }}</span>
+              </div>
+              <div class="taste-bar-wrapper">
+                <span class="bar-limit-label min">甘口</span>
+                <div class="bar-container">
+                  <div class="bar-bg sweet-dry-bg"></div>
+                  <div class="center-line"></div>
+                  <div 
+                    class="pointer" 
+                    :style="{ left: getBarPosition(selectedBooth.estimated.sweetDry, -2, 2) + '%' }"
+                  ></div>
+                </div>
+                <span class="bar-limit-label max">辛口</span>
+              </div>
             </div>
-            <div class="tasting-item">
-              <span class="label">濃淡度</span>
-              <span class="val">{{ selectedBooth.estimated.lightRich > 0 ? '+' : '' }}{{ selectedBooth.estimated.lightRich }}</span>
+
+            <!-- 淡濃 -->
+            <div class="taste-row">
+              <div class="taste-header">
+                <span class="taste-title">淡濃</span>
+                <span class="taste-current-label">{{ getLightRichLabel(selectedBooth.estimated.lightRich) }}</span>
+              </div>
+              <div class="taste-bar-wrapper">
+                <span class="bar-limit-label min">淡麗</span>
+                <div class="bar-container">
+                  <div class="bar-bg light-rich-bg"></div>
+                  <div class="center-line"></div>
+                  <div 
+                    class="pointer" 
+                    :style="{ left: getBarPosition(selectedBooth.estimated.lightRich, -2, 2) + '%' }"
+                  ></div>
+                </div>
+                <span class="bar-limit-label max">濃醇</span>
+              </div>
+            </div>
+
+            <!-- 香り -->
+            <div class="taste-row">
+              <div class="taste-header">
+                <span class="taste-title">香り</span>
+                <span class="taste-current-label">{{ getAromaLabel(selectedBooth.estimated.aroma) }}</span>
+              </div>
+              <div class="taste-bar-wrapper">
+                <span class="bar-limit-label min">控えめ</span>
+                <div class="bar-container no-center">
+                  <div class="bar-bg aroma-bg"></div>
+                  <div 
+                    class="pointer" 
+                    :style="{ left: getBarPosition(selectedBooth.estimated.aroma, 0, 4) + '%' }"
+                  ></div>
+                </div>
+                <span class="bar-limit-label max">華やか</span>
+              </div>
             </div>
           </div>
-          <button
-            class="visit-btn"
-            :class="{ 'is-visited-btn': visitRecords[selectedBooth.id]?.visited }"
-            @click="toggleVisited(selectedBooth.id)"
-          >
-            {{ visitRecords[selectedBooth.id]?.visited ? '訪問済みを取り消す' : '訪問済みにする' }}
-          </button>
+
+          <div class="visited-control">
+            <label class="visited-checkbox-label">
+              <input 
+                type="checkbox" 
+                :checked="visitedBreweryIds.includes(selectedBooth.id)"
+                @change="toggleVisited(selectedBooth.id)"
+              >
+              <span class="checkbox-custom"></span>
+              訪問済み
+            </label>
+          </div>
         </div>
       </div>
     </transition>
@@ -158,6 +265,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import breweriesData from '../niigata_sakenojin_breweries_list.json'
+import breweryScores from '../brewery_scores.json'
 import ProgressView from './components/ProgressView.vue'
 
 // --- Constants ---
@@ -184,28 +292,136 @@ const regionDataList = [
 // --- State ---
 const baseBooths = ref([]) // 座標のみを持つBooth配列
 const breweries = ref(new Map()) // BreweryドメインモデルのMap
-const visitRecords = ref({}) // 訪問記録
+const visitRecords = ref({}) // 訪問記録 (旧形式との互換性用)
+const visitedBreweryIds = ref([]) // 新形式: ["75", "12"]
 const selectedBoothId = ref(null)
 const currentView = ref('map') // 'map' | 'progress'
+const displayMode = ref('normal') // 'normal' | 'heatmap'
+const heatmapAxis = ref('sweetDry') // 'sweetDry' | 'lightRich' | 'aroma'
+
+// --- Constants & Config ---
+const flavorAxes = {
+  sweetDry: {
+    min: -2,
+    max: 2,
+    colors: ['#f8c8dc', '#e9edf5', '#4a90e2']
+  },
+  lightRich: {
+    min: -2,
+    max: 2,
+    colors: ['#dff5e1', '#f3e6d4', '#b36a2e']
+  },
+  aroma: {
+    min: 0,
+    max: 4,
+    colors: ['#ede6f7', '#9a7bbd', '#3e2a6f']
+  }
+}
+
+// Helper to interpolate colors (vibrant for heatmap, muted for bars)
+const interpolateColor = (val, axis, forHeatmap = true) => {
+  const config = flavorAxes[axis]
+  const normalized = (Math.max(config.min, Math.min(config.max, val)) - config.min) / (config.max - config.min)
+  
+  let hex;
+  if (normalized <= 0.5) {
+    const t = normalized * 2;
+    hex = interpolateHex(config.colors[0], config.colors[1], t);
+  } else {
+    const t = (normalized - 0.5) * 2;
+    hex = interpolateHex(config.colors[1], config.colors[2], t);
+  }
+
+  if (forHeatmap) {
+    // ヒートマップ用：彩度を少し上げる
+    return adjustSaturation(hex, 1.5)
+  }
+  // バー用：やや淡くする（彩度を下げる or 透明度を調整）
+  return adjustSaturation(hex, 0.7)
+}
+
+const interpolateHex = (color1, color2, factor) => {
+  const r1 = parseInt(color1.substring(1, 3), 16);
+  const g1 = parseInt(color1.substring(3, 5), 16);
+  const b1 = parseInt(color1.substring(5, 7), 16);
+
+  const r2 = parseInt(color2.substring(1, 3), 16);
+  const g2 = parseInt(color2.substring(3, 5), 16);
+  const b2 = parseInt(color2.substring(5, 7), 16);
+
+  const r = Math.round(r1 + factor * (r2 - r1));
+  const g = Math.round(g1 + factor * (g2 - g1));
+  const b = Math.round(b1 + factor * (b2 - b1));
+
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
+const adjustSaturation = (hex, factor) => {
+  let r = parseInt(hex.substring(1, 3), 16) / 255;
+  let g = parseInt(hex.substring(3, 5), 16) / 255;
+  let b = parseInt(hex.substring(5, 7), 16) / 255;
+
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  s = Math.min(1, s * factor);
+
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  const hue2rgb = (p, q, t) => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p) * 6 * t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    return p;
+  };
+
+  r = Math.round(hue2rgb(p, q, h + 1/3) * 255);
+  g = Math.round(hue2rgb(p, q, h) * 255);
+  b = Math.round(hue2rgb(p, q, h - 1/3) * 255);
+
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
 
 const getBoothStyle = (booth) => {
   if (booth.isEmpty) return {}
-  const regionDef = regionDataList.find(r => r.id === booth.region)
+  
+  const isVisited = visitedBreweryIds.value.includes(booth.id)
   let fill = '#e5e7eb'
   let stroke = '#ffffff'
-  
-  if (regionDef) {
-    fill = regionDef.color
-    stroke = regionDef.stroke
-  }
 
-  const isVisited = visitRecords.value[booth.id]?.visited
+  if (displayMode.value === 'normal') {
+    const regionDef = regionDataList.find(r => r.id === booth.region)
+    if (regionDef) {
+      fill = regionDef.color
+      stroke = regionDef.stroke
+    }
+  } else {
+    // Heatmap mode
+    const taste = booth.estimated
+    fill = interpolateColor(taste[heatmapAxis.value], heatmapAxis.value, true)
+    stroke = adjustSaturation(fill, 1.2)
+  }
 
   return {
     fill: fill,
     stroke: stroke,
     strokeWidth: '2px',
-    opacity: isVisited ? 1 : 0.3
+    opacity: isVisited ? 1 : 0.4
   }
 }
 
@@ -288,24 +504,38 @@ const generateBooths = (grid, ROWS, COLS) => {
 
 const attachBreweries = () => {
   const breweryMap = new Map()
+  const scoreMap = new Map()
+  
+  // スコアデータをMap化
+  breweryScores.forEach(s => {
+    scoreMap.set(s.id, s)
+  })
+
   for (const b of breweriesData) {
     const rawName = b['酒造名']
     const cleanName = rawName.replace(/(株式会社|\(株\)|有限会社|\(有\)|合名会社|\(名\)|合資会社|\(資\)|合同会社|\(同\))/g, '').trim()
     
-    const regionNameJa = b['地域'] || b['地区'] || null // 日本語地域名（「上越」「中越」「下越」「佐渡」）
+    const regionNameJa = b['地域'] || b['地区'] || null
     let regionId = regionNameJa
     if (regionId === '下越') regionId = 'kaetsu';
     else if (regionId === '中越') regionId = 'chuetsu';
     else if (regionId === '上越') regionId = 'joetsu';
     else if (regionId === '佐渡') regionId = 'sado';
 
+    const score = scoreMap.get(b.id)
+    const taste = score ? {
+      sweetDry: score.relative.sweetDry_z,
+      lightRich: score.relative.lightRich_z,
+      aroma: score.relative.aroma_z
+    } : { sweetDry: 0, lightRich: 0, aroma: 0 }
+
     breweryMap.set(b.id, {
       id: b.id,
       name: cleanName,
       rawName: rawName,
       region: regionId,
-      regionName: regionNameJa, // 集計ロジック用（日本語地域名を保持）
-      taste: generateDummyTaste(b)
+      regionName: regionNameJa,
+      taste: taste
     })
   }
   breweries.value = breweryMap
@@ -318,26 +548,49 @@ const initMap = () => {
 }
 
 const loadVisited = () => {
+  // 新形式 ["75", "12"] を優先
+  const newFormat = localStorage.getItem('visitedBreweries')
+  if (newFormat) {
+    try {
+      visitedBreweryIds.value = JSON.parse(newFormat)
+      // visitRecords も同期 (ProgressView 等で使用されている可能性があるため)
+      const records = {}
+      visitedBreweryIds.value.forEach(id => {
+        records[id] = { visited: true }
+      })
+      visitRecords.value = records
+      return
+    } catch(e) {}
+  }
+
+  // 旧形式
   const stored = localStorage.getItem('sake_visited')
   if (stored) {
     try {
       const parsed = JSON.parse(stored)
+      const ids = []
+      const records = {}
       if (Array.isArray(parsed)) {
-        // Migrate array (old format) to object (new format)
-        const migrated = {}
-        for (const id of parsed) {
-          migrated[id] = { visited: true }
-        }
-        visitRecords.value = migrated
+        parsed.forEach(id => {
+          ids.push(String(id))
+          records[id] = { visited: true }
+        })
       } else {
-        visitRecords.value = parsed
+        Object.keys(parsed).forEach(id => {
+          if (parsed[id].visited) {
+            ids.push(id)
+            records[id] = { visited: true }
+          }
+        })
       }
+      visitedBreweryIds.value = ids
+      visitRecords.value = records
     } catch(e) {}
   }
 }
 
 const saveVisited = () => {
-  localStorage.setItem('sake_visited', JSON.stringify(visitRecords.value))
+  localStorage.setItem('visitedBreweries', JSON.stringify(visitedBreweryIds.value))
 }
 
 onMounted(() => {
@@ -378,20 +631,52 @@ const selectBooth = (booth) => {
 }
 
 const toggleVisited = (id) => {
-  const record = visitRecords.value[id] || { visited: false }
-  visitRecords.value = {
-    ...visitRecords.value,
-    [id]: {
-      ...record,
-      visited: !record.visited,
-      visitedAt: !record.visited ? new Date().toISOString() : undefined
-    }
+  const index = visitedBreweryIds.value.indexOf(id)
+  if (index === -1) {
+    visitedBreweryIds.value.push(id)
+    visitRecords.value[id] = { visited: true, visitedAt: new Date().toISOString() }
+  } else {
+    visitedBreweryIds.value.splice(index, 1)
+    delete visitRecords.value[id]
   }
   saveVisited()
 }
 
+const getBarPosition = (z, min, max) => {
+  const clipped = Math.max(min, Math.min(max, z))
+  return ((clipped - min) / (max - min)) * 100
+}
+
+const getSweetDryLabel = (z) => {
+  if (z >= 1.5) return '超辛口'
+  if (z >= 0.8) return '辛口'
+  if (z >= 0.3) return 'やや辛口'
+  if (z >= -0.3) return '中間'
+  if (z >= -0.8) return 'やや甘口'
+  if (z >= -1.5) return '甘口'
+  return '超甘口'
+}
+
+const getLightRichLabel = (z) => {
+  if (z >= 1.5) return '超濃醇'
+  if (z >= 0.8) return '濃醇'
+  if (z >= 0.3) return 'やや濃醇'
+  if (z >= -0.3) return '中間'
+  if (z >= -0.8) return 'やや淡麗'
+  if (z >= -1.5) return '淡麗'
+  return '超淡麗'
+}
+
+const getAromaLabel = (z) => {
+  if (z >= 1.5) return '華やか'
+  if (z >= 0.8) return 'やや華やか'
+  if (z >= 0.3) return 'ほどよい'
+  return '控えめ'
+}
+
 const resetVisited = () => {
   if (confirm('訪問履歴をすべてリセットしますか？')) {
+    visitedBreweryIds.value = []
     visitRecords.value = {}
     saveVisited()
     selectedBoothId.value = null
@@ -406,7 +691,7 @@ const resetVisited = () => {
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background-color: #f9fafb;
+  background-color: #f8f7f4;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
 }
@@ -485,6 +770,100 @@ const resetVisited = () => {
   margin: 0 auto;
 }
 
+/* Map Controls */
+.map-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mode-toggle {
+  display: flex;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.mode-btn {
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-btn.is-active {
+  background: white;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.axis-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.axis-btn {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 20px;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.axis-btn.is-active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* Heatmap Legend */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.legend-gradient {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #f3f4f6, #8b5cf6); /* Default */
+}
+
+.sweetDry-gradient {
+  background: v-bind('`linear-gradient(to right, ${flavorAxes.sweetDry.colors[0]}, ${flavorAxes.sweetDry.colors[1]}, ${flavorAxes.sweetDry.colors[2]})`');
+}
+
+.lightRich-gradient {
+  background: v-bind('`linear-gradient(to right, ${flavorAxes.lightRich.colors[0]}, ${flavorAxes.lightRich.colors[1]}, ${flavorAxes.lightRich.colors[2]})`');
+}
+
+.aroma-gradient {
+  background: v-bind('`linear-gradient(to right, ${flavorAxes.aroma.colors[0]}, ${flavorAxes.aroma.colors[1]}, ${flavorAxes.aroma.colors[2]})`');
+}
+
+.legend-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  min-width: 40px;
+}
+
+.legend-label.min { text-align: right; }
+.legend-label.max { text-align: left; }
+
 /* Booth Styles */
 .booth-rect {
   fill: #e5e7eb; /* unvisited light gray */
@@ -511,9 +890,39 @@ const resetVisited = () => {
 
 .legend {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.stat-item {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  border: 1px solid #e5e7eb;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.stat-val {
+  font-size: 0.9rem;
+  color: #111827;
+  font-weight: 700;
 }
 
 .legend-item {
@@ -577,70 +986,192 @@ const resetVisited = () => {
 .panel-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .panel-header h2 {
   margin: 0;
-  font-size: 1.25rem;
-  color: #1f2937;
+  font-size: 1.2rem;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.booth-id-badge {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
 }
 
 .close-btn {
-  background: none;
+  background: #f3f4f6;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   color: #6b7280;
-  padding: 0 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 
 .panel-body {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.taste-bars {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.tasting-info {
-  display: flex;
-  gap: 24px;
-  background: #f3f4f6;
-  padding: 12px 16px;
-  border-radius: 8px;
-}
-
-.tasting-item {
+.taste-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 10px;
 }
 
-.tasting-item .label {
+.taste-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.taste-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #374151;
+  min-width: 34px;
+}
+
+.taste-current-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.taste-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 6px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.bar-limit-label {
   font-size: 0.75rem;
   color: #6b7280;
-}
-.tasting-item .val {
-  font-size: 1.1rem;
   font-weight: 600;
-  color: #111827;
+  min-width: 42px;
 }
 
-.visit-btn {
-  width: 100%;
-  padding: 14px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 8px;
+.bar-limit-label.min { text-align: right; }
+.bar-limit-label.max { text-align: left; }
+
+.bar-container {
+  position: relative;
+  height: 12px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.bar-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 6px;
+  opacity: 0.8;
+}
+
+.sweet-dry-bg {
+  background: v-bind('`linear-gradient(to right, ${interpolateColor(-2, "sweetDry", false)}, ${interpolateColor(0, "sweetDry", false)}, ${interpolateColor(2, "sweetDry", false)})`');
+}
+
+.light-rich-bg {
+  background: v-bind('`linear-gradient(to right, ${interpolateColor(-2, "lightRich", false)}, ${interpolateColor(0, "lightRich", false)}, ${interpolateColor(2, "lightRich", false)})`');
+}
+
+.aroma-bg {
+  background: v-bind('`linear-gradient(to right, ${interpolateColor(0, "aroma", false)}, ${interpolateColor(2, "aroma", false)}, ${interpolateColor(4, "aroma", false)})`');
+}
+
+.center-line {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: #9ca3af;
+  z-index: 1;
+}
+
+.pointer {
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border: 3px solid #1f2937;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.visited-control {
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.visited-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 600;
+  color: #374151;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
-.visit-btn.is-visited-btn {
-  background: #ef4444; /* red to unvisit */
+.visited-checkbox-label input {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.visited-checkbox-label input:checked + .checkbox-custom {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.visited-checkbox-label input:checked + .checkbox-custom::after {
+  content: "✔";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
 }
 
 /* Animations */

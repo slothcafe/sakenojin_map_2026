@@ -1,0 +1,1150 @@
+[
+  {
+    "id": "75",
+    "name": "サンプル酒造75号(株)",
+    "absolute": {
+      "sweetDry": 3.9,
+      "lightRich": 2,
+      "aroma": 1
+    },
+    "relative": {
+      "sweetDry_z": 1.75,
+      "lightRich_z": 1,
+      "aroma_z": -0.5
+    }
+  },
+  {
+    "id": "68",
+    "name": "サンプル酒造68号(株)",
+    "absolute": {
+      "sweetDry": -4.4,
+      "lightRich": -2.5,
+      "aroma": 0.8
+    },
+    "relative": {
+      "sweetDry_z": -2,
+      "lightRich_z": -1.25,
+      "aroma_z": -0.75
+    }
+  },
+  {
+    "id": "70",
+    "name": "サンプル酒造70号(株)",
+    "absolute": {
+      "sweetDry": 3.3,
+      "lightRich": 0,
+      "aroma": 3.3
+    },
+    "relative": {
+      "sweetDry_z": 1.5,
+      "lightRich_z": 0,
+      "aroma_z": 1.75
+    }
+  },
+  {
+    "id": "71",
+    "name": "サンプル酒造71号(株)",
+    "absolute": {
+      "sweetDry": -2.2,
+      "lightRich": -3,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -1,
+      "lightRich_z": -1.5,
+      "aroma_z": 3
+    }
+  },
+  {
+    "id": "59",
+    "name": "サンプル酒造59号(株)",
+    "absolute": {
+      "sweetDry": -1.7,
+      "lightRich": -1,
+      "aroma": 2.3
+    },
+    "relative": {
+      "sweetDry_z": -0.75,
+      "lightRich_z": -0.5,
+      "aroma_z": 0.75
+    }
+  },
+  {
+    "id": "72",
+    "name": "サンプル酒造72号(株)",
+    "absolute": {
+      "sweetDry": 1.7,
+      "lightRich": 2.5,
+      "aroma": 1.5
+    },
+    "relative": {
+      "sweetDry_z": 0.75,
+      "lightRich_z": 1.25,
+      "aroma_z": 0
+    }
+  },
+  {
+    "id": "74",
+    "name": "サンプル酒造74号(株)",
+    "absolute": {
+      "sweetDry": 0,
+      "lightRich": -3.5,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": 0,
+      "lightRich_z": -1.75,
+      "aroma_z": 2.5
+    }
+  },
+  {
+    "id": "78",
+    "name": "サンプル酒造78号(株)",
+    "absolute": {
+      "sweetDry": -3.3,
+      "lightRich": 1.5,
+      "aroma": 0.5
+    },
+    "relative": {
+      "sweetDry_z": -1.5,
+      "lightRich_z": 0.75,
+      "aroma_z": -1
+    }
+  },
+  {
+    "id": "80",
+    "name": "サンプル酒造80号(株)",
+    "absolute": {
+      "sweetDry": 4.4,
+      "lightRich": 4,
+      "aroma": 3
+    },
+    "relative": {
+      "sweetDry_z": 2,
+      "lightRich_z": 2,
+      "aroma_z": 1.5
+    }
+  },
+  {
+    "id": "55",
+    "name": "サンプル酒造55号(株)",
+    "absolute": {
+      "sweetDry": 1.7,
+      "lightRich": 2.5,
+      "aroma": 1.5
+    },
+    "relative": {
+      "sweetDry_z": 0.75,
+      "lightRich_z": 1.25,
+      "aroma_z": 0
+    }
+  },
+  {
+    "id": "79",
+    "name": "サンプル酒造79号(株)",
+    "absolute": {
+      "sweetDry": 0.6,
+      "lightRich": -1.5,
+      "aroma": 1.8
+    },
+    "relative": {
+      "sweetDry_z": 0.25,
+      "lightRich_z": -0.75,
+      "aroma_z": 0.25
+    }
+  },
+  {
+    "id": "63",
+    "name": "サンプル酒造63号(株)",
+    "absolute": {
+      "sweetDry": 4.4,
+      "lightRich": 4,
+      "aroma": 3
+    },
+    "relative": {
+      "sweetDry_z": 2,
+      "lightRich_z": 2,
+      "aroma_z": 1.5
+    }
+  },
+  {
+    "id": "73",
+    "name": "サンプル酒造73号(株)",
+    "absolute": {
+      "sweetDry": -3.9,
+      "lightRich": -0.5,
+      "aroma": 2.8
+    },
+    "relative": {
+      "sweetDry_z": -1.75,
+      "lightRich_z": -0.25,
+      "aroma_z": 1.25
+    }
+  },
+  {
+    "id": "62",
+    "name": "サンプル酒造62号(株)",
+    "absolute": {
+      "sweetDry": 0.6,
+      "lightRich": -1.5,
+      "aroma": 1.8
+    },
+    "relative": {
+      "sweetDry_z": 0.25,
+      "lightRich_z": -0.75,
+      "aroma_z": 0.25
+    }
+  },
+  {
+    "id": "69",
+    "name": "サンプル酒造69号(株)",
+    "absolute": {
+      "sweetDry": -0.6,
+      "lightRich": 3,
+      "aroma": 2
+    },
+    "relative": {
+      "sweetDry_z": -0.25,
+      "lightRich_z": 1.5,
+      "aroma_z": 0.5
+    }
+  },
+  {
+    "id": "77",
+    "name": "サンプル酒造77号(株)",
+    "absolute": {
+      "sweetDry": 2.2,
+      "lightRich": -4,
+      "aroma": 3.5
+    },
+    "relative": {
+      "sweetDry_z": 1,
+      "lightRich_z": -2,
+      "aroma_z": 2
+    }
+  },
+  {
+    "id": "64",
+    "name": "サンプル酒造64号(株)",
+    "absolute": {
+      "sweetDry": -1.1,
+      "lightRich": 1,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -0.5,
+      "lightRich_z": 0.5,
+      "aroma_z": 2.75
+    }
+  },
+  {
+    "id": "60",
+    "name": "サンプル酒造60号(株)",
+    "absolute": {
+      "sweetDry": 2.2,
+      "lightRich": -4,
+      "aroma": 3.5
+    },
+    "relative": {
+      "sweetDry_z": 1,
+      "lightRich_z": -2,
+      "aroma_z": 2
+    }
+  },
+  {
+    "id": "76",
+    "name": "サンプル酒造76号(株)",
+    "absolute": {
+      "sweetDry": -1.7,
+      "lightRich": -1,
+      "aroma": 2.3
+    },
+    "relative": {
+      "sweetDry_z": -0.75,
+      "lightRich_z": -0.5,
+      "aroma_z": 0.75
+    }
+  },
+  {
+    "id": "57",
+    "name": "サンプル酒造57号(株)",
+    "absolute": {
+      "sweetDry": 0,
+      "lightRich": -3.5,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": 0,
+      "lightRich_z": -1.75,
+      "aroma_z": 2.5
+    }
+  },
+  {
+    "id": "56",
+    "name": "サンプル酒造56号(株)",
+    "absolute": {
+      "sweetDry": -3.9,
+      "lightRich": -0.5,
+      "aroma": 2.8
+    },
+    "relative": {
+      "sweetDry_z": -1.75,
+      "lightRich_z": -0.25,
+      "aroma_z": 1.25
+    }
+  },
+  {
+    "id": "65",
+    "name": "サンプル酒造65号(株)",
+    "absolute": {
+      "sweetDry": 2.8,
+      "lightRich": -2,
+      "aroma": 1.3
+    },
+    "relative": {
+      "sweetDry_z": 1.25,
+      "lightRich_z": -1,
+      "aroma_z": -0.25
+    }
+  },
+  {
+    "id": "58",
+    "name": "サンプル酒造58号(株)",
+    "absolute": {
+      "sweetDry": 3.9,
+      "lightRich": 2,
+      "aroma": 1
+    },
+    "relative": {
+      "sweetDry_z": 1.75,
+      "lightRich_z": 1,
+      "aroma_z": -0.5
+    }
+  },
+  {
+    "id": "81",
+    "name": "サンプル酒造81号(株)",
+    "absolute": {
+      "sweetDry": -1.1,
+      "lightRich": 1,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -0.5,
+      "lightRich_z": 0.5,
+      "aroma_z": 2.75
+    }
+  },
+  {
+    "id": "61",
+    "name": "サンプル酒造61号(株)",
+    "absolute": {
+      "sweetDry": -3.3,
+      "lightRich": 1.5,
+      "aroma": 0.5
+    },
+    "relative": {
+      "sweetDry_z": -1.5,
+      "lightRich_z": 0.75,
+      "aroma_z": -1
+    }
+  },
+  {
+    "id": "41",
+    "name": "サンプル酒造41号(株)",
+    "absolute": {
+      "sweetDry": 3.9,
+      "lightRich": 2,
+      "aroma": 1
+    },
+    "relative": {
+      "sweetDry_z": 1.75,
+      "lightRich_z": 1,
+      "aroma_z": -0.5
+    }
+  },
+  {
+    "id": "11",
+    "name": "サンプル酒造11号(株)",
+    "absolute": {
+      "sweetDry": 0.6,
+      "lightRich": -1.5,
+      "aroma": 1.8
+    },
+    "relative": {
+      "sweetDry_z": 0.25,
+      "lightRich_z": -0.75,
+      "aroma_z": 0.25
+    }
+  },
+  {
+    "id": "27",
+    "name": "サンプル酒造27号(株)",
+    "absolute": {
+      "sweetDry": -3.3,
+      "lightRich": 1.5,
+      "aroma": 0.5
+    },
+    "relative": {
+      "sweetDry_z": -1.5,
+      "lightRich_z": 0.75,
+      "aroma_z": -1
+    }
+  },
+  {
+    "id": "4",
+    "name": "サンプル酒造04号(株)",
+    "absolute": {
+      "sweetDry": 1.7,
+      "lightRich": 2.5,
+      "aroma": 1.5
+    },
+    "relative": {
+      "sweetDry_z": 0.75,
+      "lightRich_z": 1.25,
+      "aroma_z": 0
+    }
+  },
+  {
+    "id": "2",
+    "name": "サンプル酒造02号(株)",
+    "absolute": {
+      "sweetDry": 3.3,
+      "lightRich": 0,
+      "aroma": 3.3
+    },
+    "relative": {
+      "sweetDry_z": 1.5,
+      "lightRich_z": 0,
+      "aroma_z": 1.75
+    }
+  },
+  {
+    "id": "42",
+    "name": "サンプル酒造42号(株)",
+    "absolute": {
+      "sweetDry": -1.7,
+      "lightRich": -1,
+      "aroma": 2.3
+    },
+    "relative": {
+      "sweetDry_z": -0.75,
+      "lightRich_z": -0.5,
+      "aroma_z": 0.75
+    }
+  },
+  {
+    "id": "29",
+    "name": "サンプル酒造29号(株)",
+    "absolute": {
+      "sweetDry": 4.4,
+      "lightRich": 4,
+      "aroma": 3
+    },
+    "relative": {
+      "sweetDry_z": 2,
+      "lightRich_z": 2,
+      "aroma_z": 1.5
+    }
+  },
+  {
+    "id": "21",
+    "name": "サンプル酒造21号(株)",
+    "absolute": {
+      "sweetDry": 1.7,
+      "lightRich": 2.5,
+      "aroma": 1.5
+    },
+    "relative": {
+      "sweetDry_z": 0.75,
+      "lightRich_z": 1.25,
+      "aroma_z": 0
+    }
+  },
+  {
+    "id": "26",
+    "name": "サンプル酒造26号(株)",
+    "absolute": {
+      "sweetDry": 2.2,
+      "lightRich": -4,
+      "aroma": 3.5
+    },
+    "relative": {
+      "sweetDry_z": 1,
+      "lightRich_z": -2,
+      "aroma_z": 2
+    }
+  },
+  {
+    "id": "9",
+    "name": "サンプル酒造09号(株)",
+    "absolute": {
+      "sweetDry": 2.2,
+      "lightRich": -4,
+      "aroma": 3.5
+    },
+    "relative": {
+      "sweetDry_z": 1,
+      "lightRich_z": -2,
+      "aroma_z": 2
+    }
+  },
+  {
+    "id": "24",
+    "name": "サンプル酒造24号(株)",
+    "absolute": {
+      "sweetDry": 3.9,
+      "lightRich": 2,
+      "aroma": 1
+    },
+    "relative": {
+      "sweetDry_z": 1.75,
+      "lightRich_z": 1,
+      "aroma_z": -0.5
+    }
+  },
+  {
+    "id": "20",
+    "name": "サンプル酒造20号(株)",
+    "absolute": {
+      "sweetDry": -2.2,
+      "lightRich": -3,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -1,
+      "lightRich_z": -1.5,
+      "aroma_z": 3
+    }
+  },
+  {
+    "id": "8",
+    "name": "サンプル酒造08号(株)",
+    "absolute": {
+      "sweetDry": -1.7,
+      "lightRich": -1,
+      "aroma": 2.3
+    },
+    "relative": {
+      "sweetDry_z": -0.75,
+      "lightRich_z": -0.5,
+      "aroma_z": 0.75
+    }
+  },
+  {
+    "id": "17",
+    "name": "サンプル酒造17号(株)",
+    "absolute": {
+      "sweetDry": -4.4,
+      "lightRich": -2.5,
+      "aroma": 0.8
+    },
+    "relative": {
+      "sweetDry_z": -2,
+      "lightRich_z": -1.25,
+      "aroma_z": -0.75
+    }
+  },
+  {
+    "id": "1",
+    "name": "サンプル酒造01号(株)",
+    "absolute": {
+      "sweetDry": -0.6,
+      "lightRich": 3,
+      "aroma": 2
+    },
+    "relative": {
+      "sweetDry_z": -0.25,
+      "lightRich_z": 1.5,
+      "aroma_z": 0.5
+    }
+  },
+  {
+    "id": "43",
+    "name": "サンプル酒造43号(株)",
+    "absolute": {
+      "sweetDry": 2.2,
+      "lightRich": -4,
+      "aroma": 3.5
+    },
+    "relative": {
+      "sweetDry_z": 1,
+      "lightRich_z": -2,
+      "aroma_z": 2
+    }
+  },
+  {
+    "id": "28",
+    "name": "サンプル酒造28号(株)",
+    "absolute": {
+      "sweetDry": 0.6,
+      "lightRich": -1.5,
+      "aroma": 1.8
+    },
+    "relative": {
+      "sweetDry_z": 0.25,
+      "lightRich_z": -0.75,
+      "aroma_z": 0.25
+    }
+  },
+  {
+    "id": "5",
+    "name": "サンプル酒造05号(株)",
+    "absolute": {
+      "sweetDry": -3.9,
+      "lightRich": -0.5,
+      "aroma": 2.8
+    },
+    "relative": {
+      "sweetDry_z": -1.75,
+      "lightRich_z": -0.25,
+      "aroma_z": 1.25
+    }
+  },
+  {
+    "id": "12",
+    "name": "サンプル酒造12号(株)",
+    "absolute": {
+      "sweetDry": 4.4,
+      "lightRich": 4,
+      "aroma": 3
+    },
+    "relative": {
+      "sweetDry_z": 2,
+      "lightRich_z": 2,
+      "aroma_z": 1.5
+    }
+  },
+  {
+    "id": "23",
+    "name": "サンプル酒造23号(株)",
+    "absolute": {
+      "sweetDry": 0,
+      "lightRich": -3.5,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": 0,
+      "lightRich_z": -1.75,
+      "aroma_z": 2.5
+    }
+  },
+  {
+    "id": "22",
+    "name": "サンプル酒造22号(株)",
+    "absolute": {
+      "sweetDry": -3.9,
+      "lightRich": -0.5,
+      "aroma": 2.8
+    },
+    "relative": {
+      "sweetDry_z": -1.75,
+      "lightRich_z": -0.25,
+      "aroma_z": 1.25
+    }
+  },
+  {
+    "id": "14",
+    "name": "サンプル酒造14号(株)",
+    "absolute": {
+      "sweetDry": 2.8,
+      "lightRich": -2,
+      "aroma": 1.3
+    },
+    "relative": {
+      "sweetDry_z": 1.25,
+      "lightRich_z": -1,
+      "aroma_z": -0.25
+    }
+  },
+  {
+    "id": "16",
+    "name": "サンプル酒造16号(株)",
+    "absolute": {
+      "sweetDry": 1.1,
+      "lightRich": 0.5,
+      "aroma": 3.8
+    },
+    "relative": {
+      "sweetDry_z": 0.5,
+      "lightRich_z": 0.25,
+      "aroma_z": 2.25
+    }
+  },
+  {
+    "id": "19",
+    "name": "サンプル酒造19号(株)",
+    "absolute": {
+      "sweetDry": 3.3,
+      "lightRich": 0,
+      "aroma": 3.3
+    },
+    "relative": {
+      "sweetDry_z": 1.5,
+      "lightRich_z": 0,
+      "aroma_z": 1.75
+    }
+  },
+  {
+    "id": "15",
+    "name": "サンプル酒造15号(株)",
+    "absolute": {
+      "sweetDry": -2.8,
+      "lightRich": 3.5,
+      "aroma": 2.5
+    },
+    "relative": {
+      "sweetDry_z": -1.25,
+      "lightRich_z": 1.75,
+      "aroma_z": 1
+    }
+  },
+  {
+    "id": "7",
+    "name": "サンプル酒造07号(株)",
+    "absolute": {
+      "sweetDry": 3.9,
+      "lightRich": 2,
+      "aroma": 1
+    },
+    "relative": {
+      "sweetDry_z": 1.75,
+      "lightRich_z": 1,
+      "aroma_z": -0.5
+    }
+  },
+  {
+    "id": "25",
+    "name": "サンプル酒造25号(株)",
+    "absolute": {
+      "sweetDry": -1.7,
+      "lightRich": -1,
+      "aroma": 2.3
+    },
+    "relative": {
+      "sweetDry_z": -0.75,
+      "lightRich_z": -0.5,
+      "aroma_z": 0.75
+    }
+  },
+  {
+    "id": "30",
+    "name": "サンプル酒造30号(株)",
+    "absolute": {
+      "sweetDry": -1.1,
+      "lightRich": 1,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -0.5,
+      "lightRich_z": 0.5,
+      "aroma_z": 2.75
+    }
+  },
+  {
+    "id": "3",
+    "name": "サンプル酒造03号(株)",
+    "absolute": {
+      "sweetDry": -2.2,
+      "lightRich": -3,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -1,
+      "lightRich_z": -1.5,
+      "aroma_z": 3
+    }
+  },
+  {
+    "id": "10",
+    "name": "サンプル酒造10号(株)",
+    "absolute": {
+      "sweetDry": -3.3,
+      "lightRich": 1.5,
+      "aroma": 0.5
+    },
+    "relative": {
+      "sweetDry_z": -1.5,
+      "lightRich_z": 0.75,
+      "aroma_z": -1
+    }
+  },
+  {
+    "id": "18",
+    "name": "サンプル酒造18号(株)",
+    "absolute": {
+      "sweetDry": -0.6,
+      "lightRich": 3,
+      "aroma": 2
+    },
+    "relative": {
+      "sweetDry_z": -0.25,
+      "lightRich_z": 1.5,
+      "aroma_z": 0.5
+    }
+  },
+  {
+    "id": "13",
+    "name": "サンプル酒造13号(株)",
+    "absolute": {
+      "sweetDry": -1.1,
+      "lightRich": 1,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -0.5,
+      "lightRich_z": 0.5,
+      "aroma_z": 2.75
+    }
+  },
+  {
+    "id": "6",
+    "name": "サンプル酒造06号(株)",
+    "absolute": {
+      "sweetDry": 0,
+      "lightRich": -3.5,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": 0,
+      "lightRich_z": -1.75,
+      "aroma_z": 2.5
+    }
+  },
+  {
+    "id": "31",
+    "name": "サンプル酒造31号(株)",
+    "absolute": {
+      "sweetDry": 2.8,
+      "lightRich": -2,
+      "aroma": 1.3
+    },
+    "relative": {
+      "sweetDry_z": 1.25,
+      "lightRich_z": -1,
+      "aroma_z": -0.25
+    }
+  },
+  {
+    "id": "49",
+    "name": "サンプル酒造49号(株)",
+    "absolute": {
+      "sweetDry": -2.8,
+      "lightRich": 3.5,
+      "aroma": 2.5
+    },
+    "relative": {
+      "sweetDry_z": -1.25,
+      "lightRich_z": 1.75,
+      "aroma_z": 1
+    }
+  },
+  {
+    "id": "48",
+    "name": "サンプル酒造48号(株)",
+    "absolute": {
+      "sweetDry": 2.8,
+      "lightRich": -2,
+      "aroma": 1.3
+    },
+    "relative": {
+      "sweetDry_z": 1.25,
+      "lightRich_z": -1,
+      "aroma_z": -0.25
+    }
+  },
+  {
+    "id": "50",
+    "name": "サンプル酒造50号(株)",
+    "absolute": {
+      "sweetDry": 1.1,
+      "lightRich": 0.5,
+      "aroma": 3.8
+    },
+    "relative": {
+      "sweetDry_z": 0.5,
+      "lightRich_z": 0.25,
+      "aroma_z": 2.25
+    }
+  },
+  {
+    "id": "33",
+    "name": "サンプル酒造33号(株)",
+    "absolute": {
+      "sweetDry": 1.1,
+      "lightRich": 0.5,
+      "aroma": 3.8
+    },
+    "relative": {
+      "sweetDry_z": 0.5,
+      "lightRich_z": 0.25,
+      "aroma_z": 2.25
+    }
+  },
+  {
+    "id": "53",
+    "name": "サンプル酒造53号(株)",
+    "absolute": {
+      "sweetDry": 3.3,
+      "lightRich": 0,
+      "aroma": 3.3
+    },
+    "relative": {
+      "sweetDry_z": 1.5,
+      "lightRich_z": 0,
+      "aroma_z": 1.75
+    }
+  },
+  {
+    "id": "45",
+    "name": "サンプル酒造45号(株)",
+    "absolute": {
+      "sweetDry": 0.6,
+      "lightRich": -1.5,
+      "aroma": 1.8
+    },
+    "relative": {
+      "sweetDry_z": 0.25,
+      "lightRich_z": -0.75,
+      "aroma_z": 0.25
+    }
+  },
+  {
+    "id": "39",
+    "name": "サンプル酒造39号(株)",
+    "absolute": {
+      "sweetDry": -3.9,
+      "lightRich": -0.5,
+      "aroma": 2.8
+    },
+    "relative": {
+      "sweetDry_z": -1.75,
+      "lightRich_z": -0.25,
+      "aroma_z": 1.25
+    }
+  },
+  {
+    "id": "52",
+    "name": "サンプル酒造52号(株)",
+    "absolute": {
+      "sweetDry": -0.6,
+      "lightRich": 3,
+      "aroma": 2
+    },
+    "relative": {
+      "sweetDry_z": -0.25,
+      "lightRich_z": 1.5,
+      "aroma_z": 0.5
+    }
+  },
+  {
+    "id": "32",
+    "name": "サンプル酒造32号(株)",
+    "absolute": {
+      "sweetDry": -2.8,
+      "lightRich": 3.5,
+      "aroma": 2.5
+    },
+    "relative": {
+      "sweetDry_z": -1.25,
+      "lightRich_z": 1.75,
+      "aroma_z": 1
+    }
+  },
+  {
+    "id": "34",
+    "name": "サンプル酒造34号(株)",
+    "absolute": {
+      "sweetDry": -4.4,
+      "lightRich": -2.5,
+      "aroma": 0.8
+    },
+    "relative": {
+      "sweetDry_z": -2,
+      "lightRich_z": -1.25,
+      "aroma_z": -0.75
+    }
+  },
+  {
+    "id": "37",
+    "name": "サンプル酒造37号(株)",
+    "absolute": {
+      "sweetDry": -2.2,
+      "lightRich": -3,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -1,
+      "lightRich_z": -1.5,
+      "aroma_z": 3
+    }
+  },
+  {
+    "id": "67",
+    "name": "サンプル酒造67号(株)",
+    "absolute": {
+      "sweetDry": 1.1,
+      "lightRich": 0.5,
+      "aroma": 3.8
+    },
+    "relative": {
+      "sweetDry_z": 0.5,
+      "lightRich_z": 0.25,
+      "aroma_z": 2.25
+    }
+  },
+  {
+    "id": "35",
+    "name": "サンプル酒造35号(株)",
+    "absolute": {
+      "sweetDry": -0.6,
+      "lightRich": 3,
+      "aroma": 2
+    },
+    "relative": {
+      "sweetDry_z": -0.25,
+      "lightRich_z": 1.5,
+      "aroma_z": 0.5
+    }
+  },
+  {
+    "id": "36",
+    "name": "サンプル酒造36号(株)",
+    "absolute": {
+      "sweetDry": 3.3,
+      "lightRich": 0,
+      "aroma": 3.3
+    },
+    "relative": {
+      "sweetDry_z": 1.5,
+      "lightRich_z": 0,
+      "aroma_z": 1.75
+    }
+  },
+  {
+    "id": "51",
+    "name": "サンプル酒造51号(株)",
+    "absolute": {
+      "sweetDry": -4.4,
+      "lightRich": -2.5,
+      "aroma": 0.8
+    },
+    "relative": {
+      "sweetDry_z": -2,
+      "lightRich_z": -1.25,
+      "aroma_z": -0.75
+    }
+  },
+  {
+    "id": "40",
+    "name": "サンプル酒造40号(株)",
+    "absolute": {
+      "sweetDry": 0,
+      "lightRich": -3.5,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": 0,
+      "lightRich_z": -1.75,
+      "aroma_z": 2.5
+    }
+  },
+  {
+    "id": "47",
+    "name": "サンプル酒造47号(株)",
+    "absolute": {
+      "sweetDry": -1.1,
+      "lightRich": 1,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -0.5,
+      "lightRich_z": 0.5,
+      "aroma_z": 2.75
+    }
+  },
+  {
+    "id": "38",
+    "name": "サンプル酒造38号(株)",
+    "absolute": {
+      "sweetDry": 1.7,
+      "lightRich": 2.5,
+      "aroma": 1.5
+    },
+    "relative": {
+      "sweetDry_z": 0.75,
+      "lightRich_z": 1.25,
+      "aroma_z": 0
+    }
+  },
+  {
+    "id": "46",
+    "name": "サンプル酒造46号(株)",
+    "absolute": {
+      "sweetDry": 4.4,
+      "lightRich": 4,
+      "aroma": 3
+    },
+    "relative": {
+      "sweetDry_z": 2,
+      "lightRich_z": 2,
+      "aroma_z": 1.5
+    }
+  },
+  {
+    "id": "54",
+    "name": "サンプル酒造54号(株)",
+    "absolute": {
+      "sweetDry": -2.2,
+      "lightRich": -3,
+      "aroma": 4
+    },
+    "relative": {
+      "sweetDry_z": -1,
+      "lightRich_z": -1.5,
+      "aroma_z": 3
+    }
+  },
+  {
+    "id": "82",
+    "name": "サンプル酒造82号(株)",
+    "absolute": {
+      "sweetDry": 2.8,
+      "lightRich": -2,
+      "aroma": 1.3
+    },
+    "relative": {
+      "sweetDry_z": 1.25,
+      "lightRich_z": -1,
+      "aroma_z": -0.25
+    }
+  },
+  {
+    "id": "44",
+    "name": "サンプル酒造44号(株)",
+    "absolute": {
+      "sweetDry": -3.3,
+      "lightRich": 1.5,
+      "aroma": 0.5
+    },
+    "relative": {
+      "sweetDry_z": -1.5,
+      "lightRich_z": 0.75,
+      "aroma_z": -1
+    }
+  },
+  {
+    "id": "66",
+    "name": "サンプル酒造66号(株)",
+    "absolute": {
+      "sweetDry": -2.8,
+      "lightRich": 3.5,
+      "aroma": 2.5
+    },
+    "relative": {
+      "sweetDry_z": -1.25,
+      "lightRich_z": 1.75,
+      "aroma_z": 1
+    }
+  }
+]
