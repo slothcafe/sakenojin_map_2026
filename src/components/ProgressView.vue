@@ -17,7 +17,7 @@
           <circle
             cx="60" cy="60" :r="radius"
             fill="none"
-            stroke="#2563eb"
+            stroke="#1E2A38"
             stroke-width="10"
             stroke-linecap="round"
             :stroke-dasharray="circumference"
@@ -181,38 +181,50 @@ const regionFill = (region) => {
 
 <style scoped>
 .progress-view {
+  --ink: #1e1e1e;
+  --ink-subtle: #6b6b6b;
+  --accent: #1e2a38;
+  --line-soft: rgba(0, 0, 0, 0.08);
+  --line-faint: rgba(0, 0, 0, 0.05);
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0;
-  padding: 0 0 32px;
+  gap: var(--space-24);
+  padding: 0 0 var(--space-24);
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
-/* セクション共通 */
+/* Section cards */
 .section {
   width: 100%;
-  padding: 20px 20px 16px;
+  padding: var(--space-24) var(--space-16);
+  background: #ffffff;
+  border: 1px solid var(--line-faint);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
 }
 
 .section + .section {
-  border-top: 1px solid #e5e7eb;
+  border-top: 0;
 }
 
 .section-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #6b7280;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-subtle);
+  letter-spacing: 0.04em;
+  margin: 0 0 var(--space-16);
 }
 
-/* ① 円形プログレス */
+/* Circular progress */
 .circular-section {
   display: flex;
   flex-direction: column;
@@ -230,16 +242,16 @@ const regionFill = (region) => {
 
 .circle-label-count {
   font-size: 18px;
-  font-weight: 700;
-  fill: #111827;
+  font-weight: 600;
+  fill: var(--ink);
 }
 
 .circle-label-pct {
   font-size: 13px;
-  fill: #6b7280;
+  fill: var(--ink-subtle);
 }
 
-/* ② SVGマップ */
+/* SVG map */
 .map-section {
   display: flex;
   flex-direction: column;
@@ -258,27 +270,28 @@ const regionFill = (region) => {
 
 .map-region {
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s ease;
+  filter: saturate(0.72);
 }
 .map-region:hover {
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .map-label {
   font-size: 13px;
-  font-weight: 700;
-  fill: #000000;
+  font-weight: 600;
+  fill: #1f1f1f;
   pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .map-stat {
-  font-size: 10px;
-  fill: rgba(0,0,0,0.85);
+  font-size: 11px;
+  fill: rgba(0, 0, 0, 0.72);
   pointer-events: none;
 }
 
-/* ③ 地域別ダッシュボード */
+/* Region dashboard */
 .dashboard-section {
   display: flex;
   flex-direction: column;
@@ -287,52 +300,56 @@ const regionFill = (region) => {
 .dashboard-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-16);
 }
 
 .dashboard-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-8);
+  padding: var(--space-12);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: #fffdf9;
 }
 
 .dashboard-row-top {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-8);
 }
 
 .region-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
   min-width: 3em;
 }
 
 .region-count {
-  font-size: 0.9rem;
-  color: #3b82f6;
+  font-size: 14px;
+  color: var(--ink);
   font-weight: 600;
 }
 
 .region-pct {
-  font-size: 0.8rem;
-  color: #6b7280;
+  font-size: 12px;
+  color: var(--ink-subtle);
   margin-left: auto;
 }
 
-/* プログレスバー */
+/* Progress bar */
 .bar-bg {
   width: 100%;
-  height: 6px;
-  background: #e5e7eb;
+  height: 8px;
+  background: #e8e5df;
   border-radius: 9999px;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  background: linear-gradient(180deg, #33485f, #1e2a38);
   border-radius: 9999px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }

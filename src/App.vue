@@ -1,191 +1,273 @@
 <template>
-  <div class="app-container">
-    <header class="header">
-      <h1>酒の陣</h1>
-      <button @click="resetVisited" class="reset-btn">履歴リセット</button>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="title-block">
+          <h1>酒の陣2026</h1>
+          <p>会場マップ</p>
+        </div>
+        <div class="header-metrics" aria-live="polite">
+          <div class="metric-row">
+            <span class="metric-label">訪問</span>
+            <span class="metric-value">{{ visitedBreweryIds.length }} / {{ breweries.size }}</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">進捗</span>
+            <span class="metric-value">{{ progressPercent }}%</span>
+          </div>
+        </div>
+      </div>
     </header>
 
-    <!-- タブ切り替え -->
-    <nav class="tab-bar">
+    <nav class="tab-bar" role="tablist" aria-label="表示タブ">
       <button
         class="tab-btn"
         :class="{ 'is-active': currentView === 'map' }"
         @click="currentView = 'map'"
       >
-        🗺 マップ
+        マップ
+      </button>
+      <button
+        class="tab-btn"
+        :class="{ 'is-active': currentView === 'heatmap' }"
+        @click="currentView = 'heatmap'"
+      >
+        ヒートマップ
       </button>
       <button
         class="tab-btn"
         :class="{ 'is-active': currentView === 'progress' }"
         @click="currentView = 'progress'"
       >
-        📊 進捗
+        進捗
       </button>
     </nav>
 
-    <!-- マップ画面 -->
-    <main v-if="currentView === 'map'" class="map-container">
-      <div class="map-controls">
-        <div class="mode-toggle">
-          <button 
-            class="mode-btn" 
-            :class="{ 'is-active': displayMode === 'normal' }"
-            @click="displayMode = 'normal'"
-          >
-            通常
-          </button>
-          <button 
-            class="mode-btn" 
-            :class="{ 'is-active': displayMode === 'heatmap' }"
-            @click="displayMode = 'heatmap'"
-          >
-            ヒートマップ
-          </button>
+    <section class="content-area">
+      <main v-if="isMapLikeView" class="map-page">
+        <div class="map-topbar">
+          <div v-if="currentView === 'map'" class="legend-row">
+            <div v-for="r in regionDataList" :key="r.id" class="legend-chip">
+              <span class="legend-color" :style="{ backgroundColor: r.color, borderColor: r.stroke }"></span>
+              <span>{{ r.name }}</span>
+            </div>
+          </div>
+
+          <div v-else class="heatmap-control-block">
+            <div class="axis-selector" role="group" aria-label="ヒートマップ軸選択">
+              <button
+                v-for="axis in heatmapAxes"
+                :key="axis.id"
+                class="axis-btn"
+                :class="{ 'is-active': heatmapAxis === axis.id }"
+                @click="heatmapAxis = axis.id"
+              >
+                {{ axis.name }}
+              </button>
+            </div>
+
+            <div class="heatmap-legend">
+              <span class="legend-label min">{{ heatmapMinLabel }}</span>
+              <div class="legend-gradient" :class="heatmapAxis + '-gradient'"></div>
+              <span class="legend-label max">{{ heatmapMaxLabel }}</span>
+            </div>
+          </div>
+
+          <div class="meta-row">
+            <span class="meta-text">
+              {{ selectedBooth ? `No.${selectedBooth.id} ${selectedBooth.name}` : '俯瞰表示: タップで最寄りブースを選択' }}
+            </span>
+            <button class="reset-btn" @click="resetVisited">履歴リセット</button>
+          </div>
         </div>
 
-        <div v-if="displayMode === 'heatmap'" class="axis-selector">
-          <button 
-            v-for="axis in [
-              { id: 'sweetDry', name: '甘辛' },
-              { id: 'lightRich', name: '淡濃' },
-              { id: 'aroma', name: '香り' }
-            ]" 
-            :key="axis.id"
-            class="axis-btn"
-            :class="{ 'is-active': heatmapAxis === axis.id }"
-            @click="heatmapAxis = axis.id"
-          >
-            {{ axis.name }}
-          </button>
-        </div>
-
-        <div v-if="displayMode === 'heatmap'" class="heatmap-legend">
-          <span class="legend-label min">{{ heatmapAxis === 'aroma' ? '控えめ' : (heatmapAxis === 'lightRich' ? '淡麗' : '甘口') }}</span>
-          <div class="legend-gradient" :class="heatmapAxis + '-gradient'"></div>
-          <span class="legend-label max">{{ heatmapAxis === 'aroma' ? '華やか' : (heatmapAxis === 'lightRich' ? '濃醇' : '辛口') }}</span>
-        </div>
-      </div>
-
-      <div v-if="displayMode === 'normal'" class="legend">
-        <div v-for="r in regionDataList" :key="r.id" class="legend-item">
-          <div :style="{ backgroundColor: r.color, borderColor: r.stroke }" class="legend-color-box"></div>
-          <span>{{ r.name }}</span>
-        </div>
-      </div>
-
-      <div class="stats-row">
-        <div class="stat-item">
-          <span class="stat-label">訪問計画:</span>
-          <span class="stat-val">{{ visitedBreweryIds.length }} / {{ breweries.size }} 蔵</span>
-        </div>
-      </div>
-
-      <svg
-        :width="mapWidth"
-        :height="mapHeight"
-        class="booth-map"
-      >
-        <g v-for="booth in validBooths" :key="booth.id">
-          <!-- Booth background -->
-          <rect
-            v-if="!booth.isEmpty"
-            :x="booth.x"
-            :y="booth.y"
-            width="64"
-            height="64"
-            class="booth-rect"
-            :style="getBoothStyle(booth)"
-            @click="selectBooth(booth)"
-          />
-          <!-- 空ブースの場合は背景枠だけ描画（クリック不可） -->
-          <rect
-            v-else
-            :x="booth.x"
-            :y="booth.y"
-            width="64"
-            height="64"
-            class="booth-rect is-empty"
-          />
-
-          <!-- Booth text / ID -->
-          <text
-            v-if="!booth.isEmpty"
-            :x="booth.x + 32"
-            :y="booth.y + 16"
-            text-anchor="middle"
-            class="booth-text"
-          >
-            {{ booth.id }}
-          </text>
-
-          <!-- Visited badge -->
-          <text
-            v-if="!booth.isEmpty && visitedBreweryIds.includes(booth.id)"
-            :x="booth.x + 52"
-            :y="booth.y + 16"
-            text-anchor="middle"
-            class="visited-check"
-          >
-            ✔
-          </text>
-
-          <template v-if="!booth.isEmpty">
-            <text
-              v-for="(line, index) in booth.nameLines"
-              :key="'name-' + index"
-              :x="booth.x + 32"
-              :y="booth.y + 44 - (booth.nameLines.length - 1) * 8 + index * 16"
-              text-anchor="middle"
-              class="booth-name-text"
-              :class="{
-                'is-small-text': booth.name === 'ラグーン ブリュワリー',
-                'is-medium-text': booth.name === 'マスカガミ'
-              }"
+        <div
+          ref="mapViewportRef"
+          class="map-viewport"
+          :class="{ 'is-zoomed': isZoomed }"
+          @pointerdown="onMapPointerDown"
+          @pointerup="onMapPointerUp"
+          @pointercancel="clearPointerState"
+          @pointerleave="clearPointerState"
+        >
+          <div class="map-canvas" :style="mapCanvasFrameStyle">
+            <svg
+              :width="mapWidth"
+              :height="mapHeight"
+              class="booth-map"
+              :style="mapSvgStyle"
             >
-              {{ line }}
-            </text>
-          </template>
-        </g>
+              <defs>
+                <linearGradient id="booth-sheen" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ffffff" stop-opacity="0.24" />
+                  <stop offset="45%" stop-color="#ffffff" stop-opacity="0.12" />
+                  <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                </linearGradient>
+              </defs>
 
-        <!-- 選択中ブースのハイライト枠（常に手前に表示） -->
-        <rect
-          v-if="selectedBooth && !selectedBooth.isEmpty"
-          :x="selectedBooth.x"
-          :y="selectedBooth.y"
-          width="64"
-          height="64"
-          fill="none"
-          stroke="black"
-          stroke-width="4"
-          rx="4"
-          class="selected-highlight"
-          pointer-events="none"
+              <g v-for="booth in validBooths" :key="booth.id">
+                <rect
+                  v-if="!booth.isEmpty"
+                  :x="booth.x"
+                  :y="booth.y"
+                  width="64"
+                  height="64"
+                  class="booth-rect"
+                  :style="getBoothStyle(booth)"
+                />
+
+                <rect
+                  v-if="!booth.isEmpty"
+                  :x="booth.x"
+                  :y="booth.y"
+                  width="64"
+                  height="64"
+                  rx="6"
+                  class="booth-gradient-overlay"
+                />
+
+                <rect
+                  v-if="!booth.isEmpty"
+                  :x="booth.x"
+                  :y="booth.y"
+                  width="64"
+                  height="64"
+                  rx="6"
+                  class="booth-border-overlay"
+                />
+
+                <rect
+                  v-else
+                  :x="booth.x"
+                  :y="booth.y"
+                  width="64"
+                  height="64"
+                  class="booth-rect is-empty"
+                />
+
+                <text
+                  v-if="!booth.isEmpty"
+                  :x="booth.x + 32"
+                  :y="booth.y + 16"
+                  text-anchor="middle"
+                  class="booth-text"
+                >
+                  {{ booth.id }}
+                </text>
+
+                <text
+                  v-if="!booth.isEmpty && visitedBreweryIds.includes(booth.id)"
+                  :x="booth.x + 52"
+                  :y="booth.y + 16"
+                  text-anchor="middle"
+                  class="visited-check"
+                >
+                  ✔
+                </text>
+
+                <template v-if="!booth.isEmpty">
+                  <text
+                    v-for="(line, index) in booth.nameLines"
+                    :key="'name-' + index"
+                    :x="booth.x + 32"
+                    :y="booth.y + 44 - (booth.nameLines.length - 1) * 8 + index * 16"
+                    text-anchor="middle"
+                    class="booth-name-text"
+                    :class="{
+                      'is-small-text': booth.name === 'ラグーン ブリュワリー',
+                      'is-medium-text': booth.name === 'マスカガミ'
+                    }"
+                  >
+                    {{ line }}
+                  </text>
+                </template>
+              </g>
+
+              <g class="facility-layer" aria-hidden="true">
+                <g class="facility-zone">
+                  <rect
+                    class="facility-zone-bg"
+                    :x="FACILITY_A_CENTER_X - FACILITY_ZONE_WIDTH / 2"
+                    :y="FACILITY_BASE_Y"
+                    :width="FACILITY_ZONE_WIDTH"
+                    :height="FACILITY_ZONE_HEIGHT"
+                    rx="12"
+                  />
+                  <text
+                    :x="FACILITY_A_CENTER_X"
+                    :y="FACILITY_BASE_Y + 24"
+                    text-anchor="middle"
+                    class="facility-title"
+                  >
+                    A御猪口交換所
+                  </text>
+                </g>
+
+                <g class="stairs-zone">
+                  <rect
+                    v-for="step in STAIRS_STEP_COUNT"
+                    :key="'a-stair-' + step"
+                    :x="FACILITY_A_CENTER_X - 72 + (step - 1) * 20"
+                    :y="STAIRS_TOP_Y"
+                    width="12"
+                    height="36"
+                    class="stairs-step"
+                  />
+                  <text
+                    :x="FACILITY_A_CENTER_X"
+                    :y="STAIRS_TOP_Y+20"
+                    text-anchor="middle"
+                    class="stairs-label"
+                  >
+                    1F⇄2F 階段
+                  </text>
+                </g>
+
+              </g>
+
+              <rect
+                v-if="selectedBooth && !selectedBooth.isEmpty"
+                :x="selectedBooth.x"
+                :y="selectedBooth.y"
+                width="64"
+                height="64"
+                fill="none"
+                stroke="#1E2A38"
+                stroke-width="4"
+                rx="4"
+                class="selected-highlight"
+                pointer-events="none"
+              />
+            </svg>
+          </div>
+        </div>
+      </main>
+
+      <main v-else class="progress-page">
+        <ProgressView
+          :breweries="breweries"
+          :visitRecords="visitRecords"
         />
-      </svg>
-    </main>
+      </main>
+    </section>
 
-    <!-- 進捗画面 -->
-    <main v-else-if="currentView === 'progress'" class="progress-container">
-      <ProgressView
-        :breweries="breweries"
-        :visitRecords="visitRecords"
-      />
-    </main>
-
-    <!-- Bottom Panel (Modal) -->
-    <transition name="slide-up">
-      <div v-if="selectedBooth && !selectedBooth.isEmpty" class="bottom-panel">
+    <transition name="panel-slide">
+      <div
+        v-if="showDetailPanel"
+        ref="bottomPanelRef"
+        class="bottom-panel"
+      >
+        <div class="panel-handle" aria-hidden="true"></div>
         <div class="panel-header">
           <div class="title-row">
             <h2>{{ selectedBooth.name }}</h2>
             <span class="booth-id-badge">No.{{ selectedBooth.id }}</span>
           </div>
-          <button class="close-btn" @click="selectedBoothId = null">×</button>
+          <button class="close-btn" @click="closeDetailPanel">×</button>
         </div>
-        
+
         <div class="panel-body">
           <div class="taste-bars">
-            <!-- 甘辛 -->
             <div class="taste-row">
               <div class="taste-header">
                 <span class="taste-title">甘辛</span>
@@ -196,8 +278,8 @@
                 <div class="bar-container">
                   <div class="bar-bg sweet-dry-bg"></div>
                   <div class="center-line"></div>
-                  <div 
-                    class="pointer" 
+                  <div
+                    class="pointer"
                     :style="{ left: getBarPosition(selectedBooth.estimated.sweetDry, -2, 2) + '%' }"
                   ></div>
                 </div>
@@ -205,7 +287,6 @@
               </div>
             </div>
 
-            <!-- 淡濃 -->
             <div class="taste-row">
               <div class="taste-header">
                 <span class="taste-title">淡濃</span>
@@ -216,8 +297,8 @@
                 <div class="bar-container">
                   <div class="bar-bg light-rich-bg"></div>
                   <div class="center-line"></div>
-                  <div 
-                    class="pointer" 
+                  <div
+                    class="pointer"
                     :style="{ left: getBarPosition(selectedBooth.estimated.lightRich, -2, 2) + '%' }"
                   ></div>
                 </div>
@@ -225,7 +306,6 @@
               </div>
             </div>
 
-            <!-- 香り -->
             <div class="taste-row">
               <div class="taste-header">
                 <span class="taste-title">香り</span>
@@ -235,8 +315,8 @@
                 <span class="bar-limit-label min">控えめ</span>
                 <div class="bar-container no-center">
                   <div class="bar-bg aroma-bg"></div>
-                  <div 
-                    class="pointer" 
+                  <div
+                    class="pointer"
                     :style="{ left: getBarPosition(selectedBooth.estimated.aroma, 0, 4) + '%' }"
                   ></div>
                 </div>
@@ -247,8 +327,8 @@
 
           <div class="visited-control">
             <label class="visited-checkbox-label">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 :checked="visitedBreweryIds.includes(selectedBooth.id)"
                 @change="toggleVisited(selectedBooth.id)"
               >
@@ -263,12 +343,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import breweriesData from '../niigata_sakenojin_breweries_list.json'
 import breweryScores from '../brewery_scores.json'
 import ProgressView from './components/ProgressView.vue'
 
-// --- Constants ---
 const BOOTH_SIZE = 64
 const BLOCK_GAP_X = 24
 const BLOCK_GAP_Y = 32
@@ -277,11 +356,28 @@ const BLOCKS_Y = 3
 const INNER_COLS = 2
 const INNER_ROWS = 2
 
-// Calculate Map Size
-const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
-const mapHeight = BLOCKS_Y * (INNER_ROWS * BOOTH_SIZE) + (BLOCKS_Y - 1) * BLOCK_GAP_Y
+const OVERVIEW_SCALE = 0.6
+const FOCUSED_SCALE = 1.3
+const TAP_MOVE_THRESHOLD = 10
+const TAP_TIME_THRESHOLD = 280
+const PANEL_OVERLAP_FALLBACK = 220
+const MAP_EXTRA_BOTTOM = 252
+const MAP_MOTION_MS = 620
+const DETAIL_RECALC_DELAY_MS = 360
+const PANEL_HEIGHT_RATIO_ESTIMATE = 0.52
+const PANEL_HEIGHT_CAP_PX = 380
 
-// Region Display Colors
+const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
+const boothAreaHeight = BLOCKS_Y * (INNER_ROWS * BOOTH_SIZE) + (BLOCKS_Y - 1) * BLOCK_GAP_Y
+const mapHeight = boothAreaHeight + MAP_EXTRA_BOTTOM
+
+const FACILITY_BASE_Y = boothAreaHeight + 24
+const FACILITY_ZONE_WIDTH = 232
+const FACILITY_ZONE_HEIGHT = 56
+const FACILITY_A_CENTER_X = Math.round(mapWidth * 0.56)
+const STAIRS_TOP_Y = FACILITY_BASE_Y + 82
+const STAIRS_STEP_COUNT = 7
+
 const regionDataList = [
   { id: 'kaetsu', name: '下越', color: '#D6A9B8', stroke: '#C293A4' },
   { id: 'chuetsu', name: '中越', color: '#A9C8A9', stroke: '#8EAF8E' },
@@ -289,17 +385,30 @@ const regionDataList = [
   { id: 'sado', name: '佐渡', color: '#D4B84F', stroke: '#B29739' }
 ]
 
-// --- State ---
-const baseBooths = ref([]) // 座標のみを持つBooth配列
-const breweries = ref(new Map()) // BreweryドメインモデルのMap
-const visitRecords = ref({}) // 訪問記録 (旧形式との互換性用)
-const visitedBreweryIds = ref([]) // 新形式: ["75", "12"]
-const selectedBoothId = ref(null)
-const currentView = ref('map') // 'map' | 'progress'
-const displayMode = ref('normal') // 'normal' | 'heatmap'
-const heatmapAxis = ref('sweetDry') // 'sweetDry' | 'lightRich' | 'aroma'
+const heatmapAxes = [
+  { id: 'sweetDry', name: '甘辛' },
+  { id: 'lightRich', name: '淡濃' },
+  { id: 'aroma', name: '香り' }
+]
 
-// --- Constants & Config ---
+const baseBooths = ref([])
+const breweries = ref(new Map())
+const visitRecords = ref({})
+const visitedBreweryIds = ref([])
+const selectedBoothId = ref(null)
+const currentView = ref('map')
+const heatmapAxis = ref('sweetDry')
+
+const mapViewportRef = ref(null)
+const bottomPanelRef = ref(null)
+const mapScale = ref(OVERVIEW_SCALE)
+const mapOffsetY = ref(0)
+const panelOverlapPx = ref(0)
+const pointerState = ref(null)
+const overviewAnchorBoothId = ref(null)
+const mapAnimationRafId = ref(null)
+const mapRecalcTimerId = ref(null)
+
 const flavorAxes = {
   sweetDry: {
     min: -2,
@@ -318,117 +427,165 @@ const flavorAxes = {
   }
 }
 
-// Helper to interpolate colors (vibrant for heatmap, muted for bars)
+const isMapLikeView = computed(() => currentView.value === 'map' || currentView.value === 'heatmap')
+const isZoomed = computed(() => mapScale.value > OVERVIEW_SCALE + 0.01)
+
+const progressPercent = computed(() => {
+  const total = breweries.value.size
+  if (!total) return 0
+  return Math.round((visitedBreweryIds.value.length / total) * 100)
+})
+
+const heatmapMinLabel = computed(() => {
+  if (heatmapAxis.value === 'aroma') return '控えめ'
+  if (heatmapAxis.value === 'lightRich') return '淡麗'
+  return '甘口'
+})
+
+const heatmapMaxLabel = computed(() => {
+  if (heatmapAxis.value === 'aroma') return '華やか'
+  if (heatmapAxis.value === 'lightRich') return '濃醇'
+  return '辛口'
+})
+
+const mapCanvasFrameStyle = computed(() => ({
+  width: `${mapWidth * mapScale.value}px`,
+  height: `${mapHeight * mapScale.value}px`
+}))
+
+const mapSvgStyle = computed(() => ({
+  transform: `translate3d(0, ${mapOffsetY.value}px, 0) scale(${mapScale.value})`,
+  transformOrigin: 'top left'
+}))
+
+const showDetailPanel = computed(() => {
+  return isMapLikeView.value && !!selectedBooth.value && !selectedBooth.value.isEmpty
+})
+
+const sweetDryGradient = computed(() => `linear-gradient(to right, ${flavorAxes.sweetDry.colors[0]}, ${flavorAxes.sweetDry.colors[1]}, ${flavorAxes.sweetDry.colors[2]})`)
+const lightRichGradient = computed(() => `linear-gradient(to right, ${flavorAxes.lightRich.colors[0]}, ${flavorAxes.lightRich.colors[1]}, ${flavorAxes.lightRich.colors[2]})`)
+const aromaGradient = computed(() => `linear-gradient(to right, ${flavorAxes.aroma.colors[0]}, ${flavorAxes.aroma.colors[1]}, ${flavorAxes.aroma.colors[2]})`)
+
+const sweetDryBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(-2, 'sweetDry', false)}, ${interpolateColor(0, 'sweetDry', false)}, ${interpolateColor(2, 'sweetDry', false)})`)
+const lightRichBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(-2, 'lightRich', false)}, ${interpolateColor(0, 'lightRich', false)}, ${interpolateColor(2, 'lightRich', false)})`)
+const aromaBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(0, 'aroma', false)}, ${interpolateColor(2, 'aroma', false)}, ${interpolateColor(4, 'aroma', false)})`)
+
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
+const easeOutQuint = (t) => 1 - Math.pow(1 - t, 5)
+
 const interpolateColor = (val, axis, forHeatmap = true) => {
   const config = flavorAxes[axis]
   const normalized = (Math.max(config.min, Math.min(config.max, val)) - config.min) / (config.max - config.min)
-  
-  let hex;
+
+  let hex
   if (normalized <= 0.5) {
-    const t = normalized * 2;
-    hex = interpolateHex(config.colors[0], config.colors[1], t);
+    const t = normalized * 2
+    hex = interpolateHex(config.colors[0], config.colors[1], t)
   } else {
-    const t = (normalized - 0.5) * 2;
-    hex = interpolateHex(config.colors[1], config.colors[2], t);
+    const t = (normalized - 0.5) * 2
+    hex = interpolateHex(config.colors[1], config.colors[2], t)
   }
 
   if (forHeatmap) {
-    // ヒートマップ用：彩度を少し上げる
     return adjustSaturation(hex, 1.5)
   }
-  // バー用：やや淡くする（彩度を下げる or 透明度を調整）
   return adjustSaturation(hex, 0.7)
 }
 
 const interpolateHex = (color1, color2, factor) => {
-  const r1 = parseInt(color1.substring(1, 3), 16);
-  const g1 = parseInt(color1.substring(3, 5), 16);
-  const b1 = parseInt(color1.substring(5, 7), 16);
+  const r1 = parseInt(color1.substring(1, 3), 16)
+  const g1 = parseInt(color1.substring(3, 5), 16)
+  const b1 = parseInt(color1.substring(5, 7), 16)
 
-  const r2 = parseInt(color2.substring(1, 3), 16);
-  const g2 = parseInt(color2.substring(3, 5), 16);
-  const b2 = parseInt(color2.substring(5, 7), 16);
+  const r2 = parseInt(color2.substring(1, 3), 16)
+  const g2 = parseInt(color2.substring(3, 5), 16)
+  const b2 = parseInt(color2.substring(5, 7), 16)
 
-  const r = Math.round(r1 + factor * (r2 - r1));
-  const g = Math.round(g1 + factor * (g2 - g1));
-  const b = Math.round(b1 + factor * (b2 - b1));
+  const r = Math.round(r1 + factor * (r2 - r1))
+  const g = Math.round(g1 + factor * (g2 - g1))
+  const b = Math.round(b1 + factor * (b2 - b1))
 
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
 }
 
 const adjustSaturation = (hex, factor) => {
-  let r = parseInt(hex.substring(1, 3), 16) / 255;
-  let g = parseInt(hex.substring(3, 5), 16) / 255;
-  let b = parseInt(hex.substring(5, 7), 16) / 255;
+  let r = parseInt(hex.substring(1, 3), 16) / 255
+  let g = parseInt(hex.substring(3, 5), 16) / 255
+  let b = parseInt(hex.substring(5, 7), 16) / 255
 
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h, s, l = (max + min) / 2;
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h
+  let s
+  const l = (max + min) / 2
 
   if (max === min) {
-    h = s = 0;
+    h = 0
+    s = 0
   } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break
+      case g: h = (b - r) / d + 2; break
+      default: h = (r - g) / d + 4
     }
-    h /= 6;
+    h /= 6
   }
 
-  s = Math.min(1, s * factor);
+  s = Math.min(1, s * factor)
 
-  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-  const p = 2 * l - q;
-  const hue2rgb = (p, q, t) => {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q - p) * 6 * t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-    return p;
-  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+  const p = 2 * l - q
 
-  r = Math.round(hue2rgb(p, q, h + 1/3) * 255);
-  g = Math.round(hue2rgb(p, q, h) * 255);
-  b = Math.round(hue2rgb(p, q, h - 1/3) * 255);
+  const hue2rgb = (pv, qv, t) => {
+    let temp = t
+    if (temp < 0) temp += 1
+    if (temp > 1) temp -= 1
+    if (temp < 1 / 6) return pv + (qv - pv) * 6 * temp
+    if (temp < 1 / 2) return qv
+    if (temp < 2 / 3) return pv + (qv - pv) * (2 / 3 - temp) * 6
+    return pv
+  }
 
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  r = Math.round(hue2rgb(p, q, h + 1 / 3) * 255)
+  g = Math.round(hue2rgb(p, q, h) * 255)
+  b = Math.round(hue2rgb(p, q, h - 1 / 3) * 255)
+
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
 }
 
 const getBoothStyle = (booth) => {
   if (booth.isEmpty) return {}
-  
+
   const isVisited = visitedBreweryIds.value.includes(booth.id)
   let fill = '#e5e7eb'
   let stroke = '#ffffff'
 
-  if (displayMode.value === 'normal') {
+  if (currentView.value === 'map') {
     const regionDef = regionDataList.find(r => r.id === booth.region)
     if (regionDef) {
       fill = regionDef.color
       stroke = regionDef.stroke
     }
   } else {
-    // Heatmap mode
-    const taste = booth.estimated
-    fill = interpolateColor(taste[heatmapAxis.value], heatmapAxis.value, true)
+    fill = interpolateColor(booth.estimated[heatmapAxis.value], heatmapAxis.value, true)
     stroke = adjustSaturation(fill, 1.2)
   }
 
   return {
-    fill: fill,
-    stroke: stroke,
+    fill,
+    stroke,
     strokeWidth: '2px',
-    opacity: isVisited ? 1 : 0.4
+    opacity: isVisited ? 1 : 0.42
   }
 }
 
-// --- Helper ---
 const formatNameWithLineBreaks = (rawName) => {
-  let clean = rawName.replace(/(株式会社|\(株\)|有限会社|\(有\)|合名会社|\(名\)|合資会社|\(資\)|合同会社|\(同\))/g, '').trim()
-  
+  const clean = rawName
+    .replace(/(株式会社|\(株\)|有限会社|\(有\)|合名会社|\(名\)|合資会社|\(資\)|合同会社|\(同\))/g, '')
+    .trim()
+
   if (clean.includes(' ')) return clean.split(' ')
   if (clean.includes('　')) return clean.split('　')
   if (clean === 'よしかわ杜氏の郷') return ['よしかわ', '杜氏の郷']
@@ -440,7 +597,7 @@ const formatNameWithLineBreaks = (rawName) => {
       return [prefix, suffix]
     }
   }
-  
+
   if (clean.length >= 7) {
     const mid = Math.ceil(clean.length / 2)
     return [clean.slice(0, mid), clean.slice(mid)]
@@ -449,18 +606,10 @@ const formatNameWithLineBreaks = (rawName) => {
   return [clean]
 }
 
-const generateDummyTaste = (brewery) => {
-  return {
-    sweetDry: Number((Math.random() * 4 - 2).toFixed(1)),
-    lightRich: Number((Math.random() * 4 - 2).toFixed(1))
-  }
-}
-
-// --- Initialization ---
 const generateGridCoordinates = () => {
-  const COLS = BLOCKS_X * INNER_COLS // 14
-  const ROWS = BLOCKS_Y * INNER_ROWS // 6
-  
+  const COLS = BLOCKS_X * INNER_COLS
+  const ROWS = BLOCKS_Y * INNER_ROWS
+
   const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(null))
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -471,6 +620,7 @@ const generateGridCoordinates = () => {
       grid[r][c] = { x, y }
     }
   }
+
   return { grid, ROWS, COLS }
 }
 
@@ -499,45 +649,50 @@ const generateBooths = (grid, ROWS, COLS) => {
       cellCount++
     }
   }
+
   return generatedBooths
 }
 
 const attachBreweries = () => {
   const breweryMap = new Map()
   const scoreMap = new Map()
-  
-  // スコアデータをMap化
+
   breweryScores.forEach(s => {
     scoreMap.set(s.id, s)
   })
 
   for (const b of breweriesData) {
     const rawName = b['酒造名']
-    const cleanName = rawName.replace(/(株式会社|\(株\)|有限会社|\(有\)|合名会社|\(名\)|合資会社|\(資\)|合同会社|\(同\))/g, '').trim()
-    
+    const cleanName = rawName
+      .replace(/(株式会社|\(株\)|有限会社|\(有\)|合名会社|\(名\)|合資会社|\(資\)|合同会社|\(同\))/g, '')
+      .trim()
+
     const regionNameJa = b['地域'] || b['地区'] || null
     let regionId = regionNameJa
-    if (regionId === '下越') regionId = 'kaetsu';
-    else if (regionId === '中越') regionId = 'chuetsu';
-    else if (regionId === '上越') regionId = 'joetsu';
-    else if (regionId === '佐渡') regionId = 'sado';
+    if (regionId === '下越') regionId = 'kaetsu'
+    else if (regionId === '中越') regionId = 'chuetsu'
+    else if (regionId === '上越') regionId = 'joetsu'
+    else if (regionId === '佐渡') regionId = 'sado'
 
     const score = scoreMap.get(b.id)
-    const taste = score ? {
-      sweetDry: score.relative.sweetDry_z,
-      lightRich: score.relative.lightRich_z,
-      aroma: score.relative.aroma_z
-    } : { sweetDry: 0, lightRich: 0, aroma: 0 }
+    const taste = score
+      ? {
+          sweetDry: score.relative.sweetDry_z,
+          lightRich: score.relative.lightRich_z,
+          aroma: score.relative.aroma_z
+        }
+      : { sweetDry: 0, lightRich: 0, aroma: 0 }
 
     breweryMap.set(b.id, {
       id: b.id,
       name: cleanName,
-      rawName: rawName,
+      rawName,
       region: regionId,
       regionName: regionNameJa,
-      taste: taste
+      taste
     })
   }
+
   breweries.value = breweryMap
 }
 
@@ -548,22 +703,21 @@ const initMap = () => {
 }
 
 const loadVisited = () => {
-  // 新形式 ["75", "12"] を優先
   const newFormat = localStorage.getItem('visitedBreweries')
   if (newFormat) {
     try {
       visitedBreweryIds.value = JSON.parse(newFormat)
-      // visitRecords も同期 (ProgressView 等で使用されている可能性があるため)
       const records = {}
       visitedBreweryIds.value.forEach(id => {
         records[id] = { visited: true }
       })
       visitRecords.value = records
       return
-    } catch(e) {}
+    } catch {
+      // noop
+    }
   }
 
-  // 旧形式
   const stored = localStorage.getItem('sake_visited')
   if (stored) {
     try {
@@ -585,7 +739,9 @@ const loadVisited = () => {
       }
       visitedBreweryIds.value = ids
       visitRecords.value = records
-    } catch(e) {}
+    } catch {
+      // noop
+    }
   }
 }
 
@@ -593,26 +749,21 @@ const saveVisited = () => {
   localStorage.setItem('visitedBreweries', JSON.stringify(visitedBreweryIds.value))
 }
 
-onMounted(() => {
-  initMap()
-  loadVisited()
-})
-
-// --- Computed ---
 const mapBoothsWithBreweryData = computed(() => {
   return baseBooths.value.map(booth => {
     if (booth.isEmpty) {
       return { ...booth }
     }
+
     const brewery = breweries.value.get(booth.id)
     const name = brewery ? brewery.name : `不明 ${booth.id}`
     const rawName = brewery ? brewery.rawName : `不明 ${booth.id}`
-    
+
     return {
       ...booth,
       name,
       nameLines: formatNameWithLineBreaks(rawName),
-      estimated: brewery ? brewery.taste : { sweetDry: 0, lightRich: 0 },
+      estimated: brewery ? brewery.taste : { sweetDry: 0, lightRich: 0, aroma: 0 },
       region: brewery ? brewery.region : null
     }
   })
@@ -624,10 +775,293 @@ const selectedBooth = computed(() => {
   return mapBoothsWithBreweryData.value.find(b => b.id === selectedBoothId.value) || null
 })
 
-// --- Actions ---
+const findNearestBooth = (mapX, mapY) => {
+  let nearest = null
+  let minDistanceSq = Number.POSITIVE_INFINITY
+
+  for (const booth of validBooths.value) {
+    if (booth.isEmpty) continue
+
+    const centerX = booth.x + BOOTH_SIZE / 2
+    const centerY = booth.y + BOOTH_SIZE / 2
+    const dx = centerX - mapX
+    const dy = centerY - mapY
+    const distanceSq = dx * dx + dy * dy
+
+    if (distanceSq < minDistanceSq) {
+      minDistanceSq = distanceSq
+      nearest = booth
+    }
+  }
+
+  return nearest
+}
+
+const findNearestBoothFromEvent = (event) => {
+  const viewport = mapViewportRef.value
+  if (!viewport) return null
+
+  const viewportRect = viewport.getBoundingClientRect()
+  const localX = clamp(event.clientX - viewportRect.left, 0, viewportRect.width)
+  const localY = clamp(event.clientY - viewportRect.top, 0, viewportRect.height)
+
+  const mapX = (viewport.scrollLeft + localX) / mapScale.value
+  const mapY = (viewport.scrollTop + localY - mapOffsetY.value) / mapScale.value
+
+  if (mapY < 0 || mapY > boothAreaHeight) return null
+
+  return findNearestBooth(mapX, mapY)
+}
+
+const refreshPanelOverlap = () => {
+  if (!showDetailPanel.value) {
+    panelOverlapPx.value = 0
+    return
+  }
+
+  const viewport = mapViewportRef.value
+  const panel = bottomPanelRef.value
+  if (!viewport || !panel) return
+
+  const viewportRect = viewport.getBoundingClientRect()
+  const panelRect = panel.getBoundingClientRect()
+
+  panelOverlapPx.value = Math.max(0, viewportRect.bottom - panelRect.top)
+}
+
+const estimatePanelOverlap = () => {
+  const viewport = mapViewportRef.value
+  if (!viewport) return PANEL_OVERLAP_FALLBACK
+
+  const estimatedPanelHeight = Math.min(window.innerHeight * PANEL_HEIGHT_RATIO_ESTIMATE, PANEL_HEIGHT_CAP_PX)
+  const boundedHeight = Math.min(viewport.clientHeight - 24, estimatedPanelHeight + 18)
+  return Math.max(PANEL_OVERLAP_FALLBACK, boundedHeight)
+}
+
+const cancelMapAnimation = () => {
+  if (mapAnimationRafId.value !== null) {
+    cancelAnimationFrame(mapAnimationRafId.value)
+    mapAnimationRafId.value = null
+  }
+}
+
+const cancelRecalcTimer = () => {
+  if (mapRecalcTimerId.value !== null) {
+    clearTimeout(mapRecalcTimerId.value)
+    mapRecalcTimerId.value = null
+  }
+}
+
+const animateMapState = ({ targetScale, targetLeft, targetTop, targetOffsetY, smooth = true }) => {
+  const viewport = mapViewportRef.value
+  if (!viewport) return
+
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const finalMaxScrollLeft = Math.max(0, mapWidth * targetScale - viewport.clientWidth)
+  const finalMaxScrollTop = Math.max(0, mapHeight * targetScale - viewport.clientHeight)
+  const resolvedTargetLeft = clamp(targetLeft, 0, finalMaxScrollLeft)
+  const resolvedTargetTop = clamp(targetTop, 0, finalMaxScrollTop)
+
+  if (!smooth || reduced) {
+    cancelMapAnimation()
+    mapScale.value = targetScale
+    mapOffsetY.value = targetOffsetY
+    viewport.scrollLeft = resolvedTargetLeft
+    viewport.scrollTop = resolvedTargetTop
+    return
+  }
+
+  cancelMapAnimation()
+
+  const startScale = mapScale.value
+  const startLeft = viewport.scrollLeft
+  const startTop = viewport.scrollTop
+  const startOffsetY = mapOffsetY.value
+  const startedAt = performance.now()
+
+  const tick = (now) => {
+    const elapsed = now - startedAt
+    const progress = clamp(elapsed / MAP_MOTION_MS, 0, 1)
+    const eased = easeOutQuint(progress)
+
+    const nextScale = startScale + (targetScale - startScale) * eased
+    const nextOffsetY = startOffsetY + (targetOffsetY - startOffsetY) * eased
+    const nextLeftRaw = startLeft + (resolvedTargetLeft - startLeft) * eased
+    const nextTopRaw = startTop + (resolvedTargetTop - startTop) * eased
+    const currentMaxScrollLeft = Math.max(0, mapWidth * nextScale - viewport.clientWidth)
+    const currentMaxScrollTop = Math.max(0, mapHeight * nextScale - viewport.clientHeight)
+
+    mapScale.value = nextScale
+    mapOffsetY.value = nextOffsetY
+    viewport.scrollLeft = clamp(nextLeftRaw, 0, currentMaxScrollLeft)
+    viewport.scrollTop = clamp(nextTopRaw, 0, currentMaxScrollTop)
+
+    if (progress < 1) {
+      mapAnimationRafId.value = requestAnimationFrame(tick)
+    } else {
+      mapScale.value = targetScale
+      mapOffsetY.value = targetOffsetY
+      viewport.scrollLeft = resolvedTargetLeft
+      viewport.scrollTop = resolvedTargetTop
+      mapAnimationRafId.value = null
+    }
+  }
+
+  mapAnimationRafId.value = requestAnimationFrame(tick)
+}
+
+const centerOverview = (smooth = true) => {
+  const viewport = mapViewportRef.value
+  if (!viewport) return
+
+  const scaledWidth = mapWidth * OVERVIEW_SCALE
+  const scaledHeight = mapHeight * OVERVIEW_SCALE
+  const maxScrollLeft = Math.max(0, scaledWidth - viewport.clientWidth)
+  const maxScrollTop = Math.max(0, scaledHeight - viewport.clientHeight)
+  const targetLeft = maxScrollLeft / 2
+  const targetTop = maxScrollTop / 2
+  const centeredOffsetY = scaledHeight <= viewport.clientHeight
+    ? Math.max(0, (viewport.clientHeight - scaledHeight) / 2)
+    : 0
+
+  animateMapState({
+    targetScale: OVERVIEW_SCALE,
+    targetLeft,
+    targetTop,
+    targetOffsetY: centeredOffsetY,
+    smooth
+  })
+}
+
+const centerOnBooth = (booth, { smooth = true, targetScale = FOCUSED_SCALE, panelAware = true } = {}) => {
+  const viewport = mapViewportRef.value
+  if (!viewport || !booth) return
+
+  const scaledWidth = mapWidth * targetScale
+  const scaledHeight = mapHeight * targetScale
+
+  const centerX = (booth.x + BOOTH_SIZE / 2) * targetScale
+  const centerY = (booth.y + BOOTH_SIZE / 2) * targetScale
+
+  const maxScrollLeft = Math.max(0, scaledWidth - viewport.clientWidth)
+  const maxScrollTop = Math.max(0, scaledHeight - viewport.clientHeight)
+  const targetLeft = clamp(centerX - viewport.clientWidth / 2, 0, maxScrollLeft)
+
+  const estimatedPanelOverlap = estimatePanelOverlap()
+  const safeBottom = panelAware
+    ? Math.max(panelOverlapPx.value, estimatedPanelOverlap) + 16
+    : 16
+  const topPadding = 24
+  const maxVisibleY = Math.max(topPadding + 24, viewport.clientHeight - safeBottom - 24)
+  const targetY = (topPadding + maxVisibleY) / 2
+
+  const unclampedOffset = targetY - centerY
+  let targetOffsetY = 0
+  let targetTop = 0
+
+  if (scaledHeight > viewport.clientHeight) {
+    targetTop = clamp(centerY - targetY, 0, maxScrollTop)
+    targetOffsetY = 0
+  } else {
+    const centeredOffset = (viewport.clientHeight - scaledHeight) / 2
+    const travel = panelAware ? Math.max(24, panelOverlapPx.value * 0.75) : 100
+    const minOffset = centeredOffset - travel
+    const maxOffset = centeredOffset + 24
+    targetOffsetY = clamp(unclampedOffset, minOffset, maxOffset)
+    targetTop = 0
+  }
+
+  animateMapState({
+    targetScale,
+    targetLeft,
+    targetTop,
+    targetOffsetY,
+    smooth
+  })
+}
+
+const focusCurrentSelection = (smooth = true) => {
+  if (!isMapLikeView.value) return
+
+  if (selectedBooth.value && !selectedBooth.value.isEmpty) {
+    centerOnBooth(selectedBooth.value, {
+      smooth,
+      targetScale: FOCUSED_SCALE,
+      panelAware: true
+    })
+    return
+  }
+
+  if (overviewAnchorBoothId.value) {
+    const anchoredBooth = validBooths.value.find(b => b.id === overviewAnchorBoothId.value && !b.isEmpty)
+    if (anchoredBooth) {
+      centerOnBooth(anchoredBooth, {
+        smooth,
+        targetScale: OVERVIEW_SCALE,
+        panelAware: false
+      })
+      return
+    }
+  }
+
+  centerOverview(smooth)
+}
+
+const scheduleFocusRecalc = (smooth = false) => {
+  requestAnimationFrame(() => {
+    refreshPanelOverlap()
+    focusCurrentSelection(smooth)
+  })
+}
+
 const selectBooth = (booth) => {
-  if (booth.isEmpty) return
+  if (!booth || booth.isEmpty) return
+
+  overviewAnchorBoothId.value = null
+  const sameBooth = selectedBoothId.value === booth.id
   selectedBoothId.value = booth.id
+
+  if (sameBooth) {
+    scheduleFocusRecalc(true)
+  }
+}
+
+const closeDetailPanel = () => {
+  overviewAnchorBoothId.value = selectedBoothId.value
+  selectedBoothId.value = null
+}
+
+const onMapPointerDown = (event) => {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+
+  // Prioritize user drag/scroll over pending auto-focus motion.
+  cancelMapAnimation()
+  cancelRecalcTimer()
+
+  pointerState.value = {
+    x: event.clientX,
+    y: event.clientY,
+    time: Date.now()
+  }
+}
+
+const onMapPointerUp = (event) => {
+  const start = pointerState.value
+  pointerState.value = null
+  if (!start) return
+
+  const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y)
+  const elapsed = Date.now() - start.time
+  if (moved > TAP_MOVE_THRESHOLD || elapsed > TAP_TIME_THRESHOLD) return
+
+  const nearest = findNearestBoothFromEvent(event)
+  if (nearest) {
+    selectBooth(nearest)
+  }
+}
+
+const clearPointerState = () => {
+  pointerState.value = null
 }
 
 const toggleVisited = (id) => {
@@ -679,283 +1113,374 @@ const resetVisited = () => {
     visitedBreweryIds.value = []
     visitRecords.value = {}
     saveVisited()
+    overviewAnchorBoothId.value = null
     selectedBoothId.value = null
   }
 }
+
+const onResize = () => {
+  scheduleFocusRecalc(false)
+}
+
+watch(selectedBoothId, async () => {
+  await nextTick()
+  scheduleFocusRecalc(true)
+})
+
+watch(currentView, async (view) => {
+  if (view === 'progress') return
+  await nextTick()
+  scheduleFocusRecalc(false)
+})
+
+watch(showDetailPanel, async () => {
+  await nextTick()
+  cancelRecalcTimer()
+  if (!showDetailPanel.value) return
+  mapRecalcTimerId.value = setTimeout(() => {
+    scheduleFocusRecalc(true)
+    mapRecalcTimerId.value = null
+  }, DETAIL_RECALC_DELAY_MS)
+})
+
+onMounted(async () => {
+  initMap()
+  loadVisited()
+  await nextTick()
+  centerOverview(false)
+  window.addEventListener('resize', onResize, { passive: true })
+})
+
+onUnmounted(() => {
+  cancelMapAnimation()
+  cancelRecalcTimer()
+  window.removeEventListener('resize', onResize)
+})
 </script>
 
 <style scoped>
-/* App Layout */
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
-  background-color: #f8f7f4;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+.app-shell {
+  /* Palette + spacing tokens */
+  --ink: #1e1e1e;
+  --ink-subtle: #6b6b6b;
+  --ink-muted: #888888;
+  --accent: #1e2a38;
+  --paper-base: #f5f3ef;
+  --paper-elevated: #ffffff;
+  --paper-modal: #fdfcf9;
+  --line-soft: rgba(0, 0, 0, 0.08);
+  --line-faint: rgba(0, 0, 0, 0.05);
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --header-height: 56px;
+  --tab-height: 48px;
+  position: relative;
+  height: 100%;
+  background: var(--paper-base);
+  color: var(--ink);
   overflow: hidden;
+  font-family: "Yu Gothic", "Hiragino Sans", "Noto Sans JP", sans-serif;
 }
 
-/* Tab Bar */
-.tab-bar {
+.app-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 40;
+  background: rgba(245, 243, 239, 0.96);
+  border-bottom: 1px solid var(--line-soft);
+  backdrop-filter: blur(8px);
+}
+
+.header-inner {
+  height: calc(var(--header-height) + var(--safe-top));
+  padding: var(--safe-top) var(--space-16) 0;
   display: flex;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.title-block h1 {
+  margin: 0;
+  font-size: 22px;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.title-block p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-subtle);
+}
+
+.header-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.metric-row {
+  display: flex;
+  gap: var(--space-8);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.metric-label {
+  color: var(--ink-subtle);
+}
+
+.metric-value {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tab-bar {
+  position: fixed;
+  top: calc(var(--safe-top) + var(--header-height));
+  inset-inline: 0;
+  height: var(--tab-height);
+  z-index: 39;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: var(--paper-modal);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 10px 0;
-  font-size: 0.9rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
   font-weight: 600;
-  color: #6b7280;
-  background: none;
-  border: none;
+  color: var(--ink-subtle);
+  background: transparent;
   border-bottom: 3px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
+  transition: color 0.24s ease, border-color 0.24s ease, opacity 0.24s ease;
 }
 
 .tab-btn.is-active {
-  color: #2563eb;
-  border-bottom-color: #2563eb;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
-/* Progress Container */
-.progress-container {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  background: #f9fafb;
+.content-area {
+  position: absolute;
+  inset: calc(var(--safe-top) + var(--header-height) + var(--tab-height)) 0 0;
+  overflow: hidden;
 }
 
-/* Header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  z-index: 10;
-}
-
-.header h1 {
-  font-size: 1.2rem;
-  margin: 0;
-  color: #111827;
-}
-
-.reset-btn {
-  font-size: 0.8rem;
-  padding: 6px 12px;
-  background: white;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  color: #4b5563;
-  cursor: pointer;
-}
-
-/* Main Map Area */
-.map-container {
-  flex: 1;
-  overflow: auto; /* Enable horizontal/vertical scrolling */
-  padding: 24px 16px 120px 16px; /* space at bottom for panel */
-  -webkit-overflow-scrolling: touch;
-}
-
-.booth-map {
-  display: block;
-  margin: 0 auto;
-}
-
-/* Map Controls */
-.map-controls {
+.map-page {
+  height: 100%;
+  padding: var(--space-16);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-16);
+  overflow: hidden;
+  animation: tabFadeIn 0.24s ease;
 }
 
-.mode-toggle {
+.map-topbar {
   display: flex;
-  background: #f3f4f6;
-  padding: 4px;
-  border-radius: 8px;
+  flex-direction: column;
+  gap: var(--space-12);
 }
 
-.mode-btn {
-  padding: 6px 16px;
-  font-size: 0.85rem;
+.legend-row {
+  display: flex;
+  gap: var(--space-8);
+  flex-wrap: wrap;
+  animation: tabFadeIn 0.22s ease;
+}
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  background: var(--paper-elevated);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 4px var(--space-12);
+  font-size: 12px;
   font-weight: 600;
-  border: none;
-  background: none;
-  border-radius: 6px;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
+  color: var(--ink);
 }
 
-.mode-btn.is-active {
-  background: white;
-  color: #2563eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+.heatmap-control-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  animation: tabFadeIn 0.22s ease;
 }
 
 .axis-selector {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-8);
 }
 
 .axis-btn {
-  padding: 6px 14px;
-  font-size: 0.8rem;
+  border: 1px solid var(--line-soft);
+  background: var(--paper-elevated);
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 20px;
-  color: #4b5563;
-  cursor: pointer;
+  color: var(--ink-subtle);
+  padding: var(--space-8) 0;
+  transition: all 0.2s ease;
 }
 
 .axis-btn.is-active {
-  background: #2563eb;
-  color: white;
-  border-color: #2563eb;
+  color: #ffffff;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-/* Heatmap Legend */
 .heatmap-legend {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 300px;
+  gap: var(--space-8);
+}
+
+.legend-label {
+  width: 40px;
+  font-size: 12px;
+  color: var(--ink-subtle);
+  font-weight: 600;
+}
+
+.legend-label.min {
+  text-align: right;
 }
 
 .legend-gradient {
   flex: 1;
   height: 8px;
-  border-radius: 4px;
-  background: linear-gradient(to right, #f3f4f6, #8b5cf6); /* Default */
+  border-radius: 999px;
+  filter: saturate(0.75);
 }
 
 .sweetDry-gradient {
-  background: v-bind('`linear-gradient(to right, ${flavorAxes.sweetDry.colors[0]}, ${flavorAxes.sweetDry.colors[1]}, ${flavorAxes.sweetDry.colors[2]})`');
+  background: v-bind(sweetDryGradient);
 }
 
 .lightRich-gradient {
-  background: v-bind('`linear-gradient(to right, ${flavorAxes.lightRich.colors[0]}, ${flavorAxes.lightRich.colors[1]}, ${flavorAxes.lightRich.colors[2]})`');
+  background: v-bind(lightRichGradient);
 }
 
 .aroma-gradient {
-  background: v-bind('`linear-gradient(to right, ${flavorAxes.aroma.colors[0]}, ${flavorAxes.aroma.colors[1]}, ${flavorAxes.aroma.colors[2]})`');
+  background: v-bind(aromaGradient);
 }
 
-.legend-label {
-  font-size: 0.75rem;
+.meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+}
+
+.meta-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ink-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reset-btn {
+  border: 1px solid rgba(30, 42, 56, 0.25);
+  background: #ffffff;
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
-  min-width: 40px;
+  padding: var(--space-8) var(--space-12);
+  white-space: nowrap;
 }
 
-.legend-label.min { text-align: right; }
-.legend-label.max { text-align: left; }
+.map-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 16px;
+  border: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  scroll-behavior: auto;
+  overscroll-behavior: contain;
+}
 
-/* Booth Styles */
+.map-viewport.is-zoomed {
+  cursor: grab;
+}
+
+.map-canvas {
+  position: relative;
+}
+
+.booth-map {
+  display: block;
+  pointer-events: none;
+  transition: none;
+  will-change: transform;
+}
+
 .booth-rect {
-  fill: #e5e7eb; /* unvisited light gray */
+  fill: #e5e7eb;
   stroke: #ffffff;
   stroke-width: 2px;
-  rx: 4px; /* rounded corners */
-  cursor: pointer;
-  transition: all 0.2s ease;
+  rx: 6px;
+  transition: fill 0.2s ease, opacity 0.2s ease;
 }
 
 .booth-rect.is-empty {
-  fill: transparent; /* 空枠は透明か薄い枠線のみなどにする */
-  stroke: #e5e7eb;
-  stroke-dasharray: 4; /* 点線表現などで空きを示す */
-  cursor: default;
+  fill: transparent;
+  stroke: #d8d3ca;
+  stroke-dasharray: 4;
 }
 
-.visited-check {
-  font-size: 14px;
-  fill: #e11d48;
-  font-weight: bold;
+.booth-gradient-overlay {
+  fill: url(#booth-sheen);
   pointer-events: none;
 }
 
-.legend {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-}
-
-.stats-row {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-}
-
-.stat-item {
-  background: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  border: 1px solid #e5e7eb;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.stat-label {
-  font-size: 0.8rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-
-.stat-val {
-  font-size: 0.9rem;
-  color: #111827;
-  font-weight: 700;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.legend-color-box {
-  width: 16px;
-  height: 16px;
-  border-width: 2px;
-  border-style: solid;
-  border-radius: 2px;
-}
-
-.legend-item span {
-  font-size: 14px;
-  color: #4b5563;
-  font-weight: bold;
+.booth-border-overlay {
+  fill: none;
+  stroke: var(--line-faint);
+  stroke-width: 1;
+  pointer-events: none;
 }
 
 .booth-text {
-  font-size: 14px;
-  fill: #4b5563;
-  font-weight: bold;
-  pointer-events: none; /* so click passes through to rect */
+  font-size: 12px;
+  fill: #4d4d4d;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .booth-name-text {
-  font-size: 16px;
-  fill: #4b5563;
-  font-weight: bold;
+  font-size: 13px;
+  fill: #1f2937;
+  font-weight: 600;
   pointer-events: none;
 }
 
@@ -967,145 +1492,202 @@ const resetVisited = () => {
   font-size: 12px;
 }
 
-/* .is-visited-text removed */
+.visited-check {
+  font-size: 13px;
+  fill: #8b4b5e;
+  font-weight: 700;
+  pointer-events: none;
+}
 
-/* Bottom Panel */
+.selected-highlight {
+  filter: drop-shadow(0 0 5px rgba(30, 42, 56, 0.24));
+}
+
+.facility-layer {
+  pointer-events: none;
+}
+
+.facility-zone-bg {
+  fill: #e6ebf1;
+  stroke: #c4ced8;
+  stroke-width: 2;
+}
+
+.facility-title {
+  fill: #324153;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.facility-subtitle {
+  fill: #4b5563;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stairs-label {
+  fill: #5b6472;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.stairs-step {
+  fill: #c4c6cc;
+  rx: 4;
+}
+
+.progress-page {
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-16);
+  animation: tabFadeIn 0.24s ease;
+}
+
 .bottom-panel {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-  padding: 16px 20px 24px;
-  z-index: 20;
+  inset: auto 0 0 0;
+  z-index: 50;
+  background: var(--paper-modal);
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+  padding: var(--space-12) var(--space-16) calc(var(--space-24) + env(safe-area-inset-bottom, 0px));
+  max-height: min(52dvh, 380px);
+  overflow-y: auto;
+}
+
+.panel-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  margin: 0 auto var(--space-16);
+  background: rgba(30, 42, 56, 0.24);
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-16);
 }
 
 .title-row {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-8);
 }
 
 .panel-header h2 {
   margin: 0;
-  font-size: 1.2rem;
-  color: #111827;
-  line-height: 1.2;
+  font-size: 18px;
+  font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
 }
 
 .booth-id-badge {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-weight: 500;
 }
 
 .close-btn {
-  background: #f3f4f6;
-  border: none;
-  font-size: 1.2rem;
-  color: #6b7280;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(30, 42, 56, 0.08);
+  color: #51606f;
+  font-size: 1.08rem;
+  line-height: 1;
 }
 
 .panel-body {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-24);
 }
 
 .taste-bars {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-16);
 }
 
 .taste-row {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-12);
 }
 
 .taste-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: var(--space-12);
 }
 
 .taste-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #374151;
-  min-width: 34px;
+  min-width: 30px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-subtle);
 }
 
 .taste-current-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #2563eb;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .taste-bar-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-left: 6px;
-  border-left: 2px solid #e5e7eb;
+  gap: var(--space-8);
+  border-left: 1px solid var(--line-soft);
+  padding-left: var(--space-8);
 }
 
 .bar-limit-label {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-weight: 600;
-  min-width: 42px;
+  min-width: 38px;
+  font-size: 13px;
+  color: var(--ink-subtle);
+  font-weight: 500;
 }
 
-.bar-limit-label.min { text-align: right; }
-.bar-limit-label.max { text-align: left; }
+.bar-limit-label.min {
+  text-align: right;
+}
 
 .bar-container {
   position: relative;
-  height: 12px;
   flex: 1;
+  height: 12px;
   display: flex;
   align-items: center;
 }
 
 .bar-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   border-radius: 6px;
-  opacity: 0.8;
+  opacity: 0.78;
+  filter: saturate(0.72);
 }
 
 .sweet-dry-bg {
-  background: v-bind('`linear-gradient(to right, ${interpolateColor(-2, "sweetDry", false)}, ${interpolateColor(0, "sweetDry", false)}, ${interpolateColor(2, "sweetDry", false)})`');
+  background: v-bind(sweetDryBarGradient);
 }
 
 .light-rich-bg {
-  background: v-bind('`linear-gradient(to right, ${interpolateColor(-2, "lightRich", false)}, ${interpolateColor(0, "lightRich", false)}, ${interpolateColor(2, "lightRich", false)})`');
+  background: v-bind(lightRichBarGradient);
 }
 
 .aroma-bg {
-  background: v-bind('`linear-gradient(to right, ${interpolateColor(0, "aroma", false)}, ${interpolateColor(2, "aroma", false)}, ${interpolateColor(4, "aroma", false)})`');
+  background: v-bind(aromaBarGradient);
 }
 
 .center-line {
@@ -1114,7 +1696,8 @@ const resetVisited = () => {
   top: -2px;
   bottom: -2px;
   width: 2px;
-  background: #9ca3af;
+  background: var(--accent);
+  opacity: 0.3;
   z-index: 1;
 }
 
@@ -1123,64 +1706,100 @@ const resetVisited = () => {
   top: 50%;
   width: 16px;
   height: 16px;
-  background: white;
-  border: 3px solid #1f2937;
+  background: #ffffff;
+  border: 2px solid var(--accent);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
 .visited-control {
-  padding-top: 8px;
-  border-top: 1px solid #f3f4f6;
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--line-soft);
 }
 
 .visited-checkbox-label {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 1rem;
+  gap: var(--space-12);
+  font-size: 14px;
   font-weight: 600;
-  color: #374151;
-  cursor: pointer;
+  color: var(--ink);
 }
 
 .visited-checkbox-label input {
   display: none;
 }
 
+/* Toggle-like checkbox */
 .checkbox-custom {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #d1d5db;
-  border-radius: 6px;
+  width: 44px;
+  height: 26px;
+  border: 1px solid rgba(30, 42, 56, 0.22);
+  border-radius: 999px;
   position: relative;
-  transition: all 0.2s;
+  background: rgba(30, 42, 56, 0.12);
+  transition: all 0.24s ease;
+}
+
+.checkbox-custom::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.16);
+  transition: transform 0.24s ease;
 }
 
 .visited-checkbox-label input:checked + .checkbox-custom {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .visited-checkbox-label input:checked + .checkbox-custom::after {
-  content: "✔";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 14px;
+  transform: translateX(18px);
 }
 
-/* Animations */
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.visited-checkbox-label input:focus-visible + .checkbox-custom {
+  outline: 2px solid rgba(30, 42, 56, 0.42);
+  outline-offset: 2px;
 }
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
+
+.panel-slide-enter-active,
+.panel-slide-leave-active {
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+}
+
+.panel-slide-enter-from,
+.panel-slide-leave-to {
+  transform: translateY(24px);
+  opacity: 0;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .booth-map,
+  .map-page,
+  .progress-page,
+  .legend-row,
+  .heatmap-control-block,
+  .panel-slide-enter-active,
+  .panel-slide-leave-active {
+    transition: none;
+    animation: none;
+  }
 }
 </style>
