@@ -1,5 +1,6 @@
 <template>
   <div class="app-shell">
+    <div class="map-container" aria-hidden="true"></div>
     <header class="app-header">
       <div class="header-inner">
         <div class="title-block">
@@ -33,6 +34,13 @@
         @click="currentView = 'heatmap'"
       >
         ヒートマップ
+      </button>
+      <button
+        class="tab-btn"
+        :class="{ 'is-active': currentView === 'favorites' }"
+        @click="currentView = 'favorites'"
+      >
+        ★お気に入り
       </button>
       <button
         class="tab-btn"
@@ -73,12 +81,6 @@
             </div>
           </div>
 
-          <div class="meta-row">
-            <span class="meta-text">
-              {{ selectedBooth ? `No.${selectedBooth.id} ${selectedBooth.name}` : '俯瞰表示: タップで最寄りブースを選択' }}
-            </span>
-            <button class="reset-btn" @click="resetVisited">履歴リセット</button>
-          </div>
         </div>
 
         <div
@@ -156,13 +158,25 @@
                 </text>
 
                 <text
-                  v-if="!booth.isEmpty && visitedBreweryIds.includes(booth.id)"
-                  :x="booth.x + 52"
+                  v-if="!booth.isEmpty"
+                  :x="booth.x + 12"
                   :y="booth.y + 16"
                   text-anchor="middle"
                   class="visited-check"
+                  :class="{ 'is-visible': visitedBoothIdSet.has(booth.id) }"
                 >
                   ✔
+                </text>
+
+                <text
+                  v-if="!booth.isEmpty"
+                  :x="booth.x + 52"
+                  :y="booth.y + 16"
+                  text-anchor="middle"
+                  class="favorite-star"
+                  :class="{ 'is-visible': favoriteBoothIdSet.has(booth.id) }"
+                >
+                  ★
                 </text>
 
                 <template v-if="!booth.isEmpty">
@@ -243,10 +257,19 @@
         </div>
       </main>
 
+      <main v-else-if="currentView === 'favorites'" class="favorites-page">
+        <FavoritesView
+          :favorites="favoriteList"
+          :regionStyles="regionStyleMap"
+          @selectBooth="selectBooth"
+        />
+      </main>
+
       <main v-else class="progress-page">
         <ProgressView
           :breweries="breweries"
           :visitRecords="visitRecords"
+          @resetVisited="resetVisited"
         />
       </main>
     </section>
@@ -256,6 +279,12 @@
         v-if="showDetailPanel"
         ref="bottomPanelRef"
         class="bottom-panel"
+        :class="{ 'is-expanded': panelVisualExpanded, 'is-dragging': isPanelDragging }"
+        :style="panelDragOffsetStyle"
+        @pointerdown="onPanelPointerDown"
+        @pointermove="onPanelPointerMove"
+        @pointerup="onPanelPointerUp"
+        @pointercancel="onPanelPointerCancel"
       >
         <div class="panel-handle" aria-hidden="true"></div>
         <div class="panel-header">
@@ -269,72 +298,118 @@
         <div class="panel-body">
           <div class="taste-bars">
             <div class="taste-row">
-              <div class="taste-header">
-                <span class="taste-title">甘辛</span>
-                <span class="taste-current-label">{{ getSweetDryLabel(selectedBooth.estimated.sweetDry) }}</span>
+              <span class="taste-title">甘辛</span>
+              <span class="bar-limit-label min">甘</span>
+              <div class="bar-container">
+                <div class="bar-bg sweet-dry-bg"></div>
+                <div class="center-line"></div>
+                <div
+                  class="pointer"
+                  :style="{ left: getBarPosition(selectedBooth.estimated.sweetDry, -2, 2) + '%' }"
+                ></div>
               </div>
-              <div class="taste-bar-wrapper">
-                <span class="bar-limit-label min">甘口</span>
-                <div class="bar-container">
-                  <div class="bar-bg sweet-dry-bg"></div>
-                  <div class="center-line"></div>
-                  <div
-                    class="pointer"
-                    :style="{ left: getBarPosition(selectedBooth.estimated.sweetDry, -2, 2) + '%' }"
-                  ></div>
-                </div>
-                <span class="bar-limit-label max">辛口</span>
-              </div>
+              <span class="bar-limit-label max">辛</span>
+              <span class="taste-current-label">{{ getSweetDryLabel(selectedBooth.estimated.sweetDry) }}</span>
             </div>
 
             <div class="taste-row">
-              <div class="taste-header">
-                <span class="taste-title">淡濃</span>
-                <span class="taste-current-label">{{ getLightRichLabel(selectedBooth.estimated.lightRich) }}</span>
+              <span class="taste-title">濃淡</span>
+              <span class="bar-limit-label min">淡</span>
+              <div class="bar-container">
+                <div class="bar-bg light-rich-bg"></div>
+                <div class="center-line"></div>
+                <div
+                  class="pointer"
+                  :style="{ left: getBarPosition(selectedBooth.estimated.lightRich, -2, 2) + '%' }"
+                ></div>
               </div>
-              <div class="taste-bar-wrapper">
-                <span class="bar-limit-label min">淡麗</span>
-                <div class="bar-container">
-                  <div class="bar-bg light-rich-bg"></div>
-                  <div class="center-line"></div>
-                  <div
-                    class="pointer"
-                    :style="{ left: getBarPosition(selectedBooth.estimated.lightRich, -2, 2) + '%' }"
-                  ></div>
-                </div>
-                <span class="bar-limit-label max">濃醇</span>
-              </div>
+              <span class="bar-limit-label max">濃</span>
+              <span class="taste-current-label">{{ getLightRichLabel(selectedBooth.estimated.lightRich) }}</span>
             </div>
 
             <div class="taste-row">
-              <div class="taste-header">
-                <span class="taste-title">香り</span>
-                <span class="taste-current-label">{{ getAromaLabel(selectedBooth.estimated.aroma) }}</span>
+              <span class="taste-title">香り</span>
+              <span class="bar-limit-label min">控</span>
+              <div class="bar-container no-center">
+                <div class="bar-bg aroma-bg"></div>
+                <div
+                  class="pointer"
+                  :style="{ left: getBarPosition(selectedBooth.estimated.aroma, 0, 4) + '%' }"
+                ></div>
               </div>
-              <div class="taste-bar-wrapper">
-                <span class="bar-limit-label min">控えめ</span>
-                <div class="bar-container no-center">
-                  <div class="bar-bg aroma-bg"></div>
-                  <div
-                    class="pointer"
-                    :style="{ left: getBarPosition(selectedBooth.estimated.aroma, 0, 4) + '%' }"
-                  ></div>
-                </div>
-                <span class="bar-limit-label max">華やか</span>
+              <span class="bar-limit-label max">華</span>
+              <span class="taste-current-label">{{ getAromaLabel(selectedBooth.estimated.aroma) }}</span>
+            </div>
+          </div>
+
+          <div v-if="panelVisualExpanded" class="brewery-extra">
+            <dl class="extra-list">
+              <div class="extra-item">
+                <dt>住所</dt>
+                <dd>{{ selectedBooth.address || '情報なし' }}</dd>
               </div>
+              <div class="extra-item">
+                <dt>代表銘柄</dt>
+                <dd>{{ selectedBooth.brand || '情報なし' }}</dd>
+              </div>
+              <div class="extra-item">
+                <dt>サマリー</dt>
+                <dd>{{ selectedBooth.summary || '情報なし' }}</dd>
+              </div>
+              <div class="extra-item">
+                <dt>URL</dt>
+                <dd>
+                  <a
+                    v-if="selectedBooth.url"
+                    class="extra-link"
+                    :href="resolveExternalUrl(selectedBooth.url)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {{ displaySelectedBoothUrl }}
+                  </a>
+                  <span v-else>情報なし</span>
+                </dd>
+              </div>
+            </dl>
+
+            <div v-if="panelExpanded" class="memo-section">
+              <h3 class="memo-title">メモ</h3>
+              <textarea
+                class="memo-textarea"
+                :value="memoDraft"
+                maxlength="200"
+                placeholder="気になった味わいや銘柄をメモ"
+                @input="onMemoInput"
+              ></textarea>
+              <p class="memo-counter">{{ memoDraft.length }} / 200</p>
             </div>
           </div>
 
           <div class="visited-control">
-            <label class="visited-checkbox-label">
-              <input
-                type="checkbox"
-                :checked="visitedBreweryIds.includes(selectedBooth.id)"
-                @change="toggleVisited(selectedBooth.id)"
+            <div class="status-controls">
+              <label class="visited-checkbox-label">
+                <input
+                  type="checkbox"
+                  :checked="visitedBoothIdSet.has(selectedBooth.id)"
+                  @change="toggleVisited(selectedBooth.id)"
+                >
+                <span class="checkbox-custom"></span>
+                訪問済み
+              </label>
+              <button
+                type="button"
+                class="favorite-toggle-btn"
+                :class="{
+                  'is-active': favoriteBoothIdSet.has(selectedBooth.id),
+                  'is-pulsing': favoritePulseBoothId === selectedBooth.id
+                }"
+                @click="toggleFavorite(selectedBooth.id)"
               >
-              <span class="checkbox-custom"></span>
-              訪問済み
-            </label>
+                <span class="favorite-icon">{{ favoriteBoothIdSet.has(selectedBooth.id) ? '★' : '☆' }}</span>
+                お気に入り
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -346,7 +421,9 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import breweriesData from '../niigata_sakenojin_breweries_list.json'
 import breweryScores from '../brewery_scores.json'
+import breweryFlavor from '../brewery_flavor.json'
 import ProgressView from './components/ProgressView.vue'
+import FavoritesView from './components/FavoritesView.vue'
 
 const BOOTH_SIZE = 64
 const BLOCK_GAP_X = 24
@@ -360,12 +437,24 @@ const OVERVIEW_SCALE = 0.6
 const FOCUSED_SCALE = 1.3
 const TAP_MOVE_THRESHOLD = 10
 const TAP_TIME_THRESHOLD = 280
-const PANEL_OVERLAP_FALLBACK = 220
+const PANEL_OVERLAP_FALLBACK_COLLAPSED = 164
+const PANEL_OVERLAP_FALLBACK_EXPANDED = 310
 const MAP_EXTRA_BOTTOM = 252
 const MAP_MOTION_MS = 620
 const DETAIL_RECALC_DELAY_MS = 360
-const PANEL_HEIGHT_RATIO_ESTIMATE = 0.52
-const PANEL_HEIGHT_CAP_PX = 380
+const PANEL_HEIGHT_RATIO_COLLAPSED = 0.38
+const PANEL_HEIGHT_RATIO_EXPANDED = 0.68
+const PANEL_HEIGHT_CAP_COLLAPSED = 300
+const PANEL_HEIGHT_CAP_EXPANDED = 560
+const PANEL_DRAG_UP_PULL_LIMIT = 164
+const PANEL_DRAG_CLOSE_THRESHOLD = 84
+const PANEL_DRAG_EXPAND_THRESHOLD = 48
+const PANEL_DRAG_PREVIEW_THRESHOLD = 20
+const PANEL_DRAG_ACTIVATION_THRESHOLD = 6
+const LOCAL_STATE_KEY = 'sakenojin_state_v1'
+const MEMO_MAX_LENGTH = 200
+const MEMO_SAVE_DEBOUNCE_MS = 500
+const FAVORITE_PULSE_MS = 260
 
 const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
 const boothAreaHeight = BLOCKS_Y * (INNER_ROWS * BOOTH_SIZE) + (BLOCKS_Y - 1) * BLOCK_GAP_Y
@@ -393,11 +482,14 @@ const heatmapAxes = [
 
 const baseBooths = ref([])
 const breweries = ref(new Map())
-const visitRecords = ref({})
-const visitedBreweryIds = ref([])
+const boothStates = ref({})
 const selectedBoothId = ref(null)
 const currentView = ref('map')
 const heatmapAxis = ref('sweetDry')
+const memoDraft = ref('')
+const memoSaveTimerId = ref(null)
+const favoritePulseBoothId = ref(null)
+const favoritePulseTimerId = ref(null)
 
 const mapViewportRef = ref(null)
 const bottomPanelRef = ref(null)
@@ -405,6 +497,9 @@ const mapScale = ref(OVERVIEW_SCALE)
 const mapOffsetY = ref(0)
 const panelOverlapPx = ref(0)
 const pointerState = ref(null)
+const panelExpanded = ref(false)
+const panelDragOffsetPx = ref(0)
+const panelDragState = ref(null)
 const overviewAnchorBoothId = ref(null)
 const mapAnimationRafId = ref(null)
 const mapRecalcTimerId = ref(null)
@@ -429,6 +524,28 @@ const flavorAxes = {
 
 const isMapLikeView = computed(() => currentView.value === 'map' || currentView.value === 'heatmap')
 const isZoomed = computed(() => mapScale.value > OVERVIEW_SCALE + 0.01)
+const visitRecords = computed(() => boothStates.value)
+const visitedBoothIdSet = computed(() => {
+  const ids = new Set()
+  Object.values(boothStates.value).forEach(state => {
+    if (state.visited) ids.add(state.id)
+  })
+  return ids
+})
+const favoriteBoothIdSet = computed(() => {
+  const ids = new Set()
+  Object.values(boothStates.value).forEach(state => {
+    if (state.favorite) ids.add(state.id)
+  })
+  return ids
+})
+const visitedBreweryIds = computed(() => Array.from(visitedBoothIdSet.value))
+const regionStyleMap = computed(() => {
+  return regionDataList.reduce((acc, region) => {
+    acc[region.id] = { color: region.color, stroke: region.stroke, name: region.name }
+    return acc
+  }, {})
+})
 
 const progressPercent = computed(() => {
   const total = breweries.value.size
@@ -459,7 +576,21 @@ const mapSvgStyle = computed(() => ({
 }))
 
 const showDetailPanel = computed(() => {
-  return isMapLikeView.value && !!selectedBooth.value && !selectedBooth.value.isEmpty
+  const inDetailEnabledView = isMapLikeView.value || currentView.value === 'favorites'
+  return inDetailEnabledView && !!selectedBooth.value && !selectedBooth.value.isEmpty
+})
+const isPanelDragging = computed(() => !!panelDragState.value)
+const panelVisualExpanded = computed(() => {
+  if (panelExpanded.value) return true
+  return isPanelDragging.value && panelDragOffsetPx.value <= -PANEL_DRAG_PREVIEW_THRESHOLD
+})
+const panelDragOffsetStyle = computed(() => ({
+  '--panel-drag-offset': `${panelDragOffsetPx.value}px`
+}))
+const displaySelectedBoothUrl = computed(() => {
+  const url = selectedBooth.value?.url
+  if (!url) return ''
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 })
 
 const sweetDryGradient = computed(() => `linear-gradient(to right, ${flavorAxes.sweetDry.colors[0]}, ${flavorAxes.sweetDry.colors[1]}, ${flavorAxes.sweetDry.colors[2]})`)
@@ -472,6 +603,10 @@ const aromaBarGradient = computed(() => `linear-gradient(to right, ${interpolate
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 const easeOutQuint = (t) => 1 - Math.pow(1 - t, 5)
+const resolveExternalUrl = (url) => {
+  if (!url) return '#'
+  return /^https?:\/\//.test(url) ? url : `https://${url}`
+}
 
 const interpolateColor = (val, axis, forHeatmap = true) => {
   const config = flavorAxes[axis]
@@ -558,7 +693,7 @@ const adjustSaturation = (hex, factor) => {
 const getBoothStyle = (booth) => {
   if (booth.isEmpty) return {}
 
-  const isVisited = visitedBreweryIds.value.includes(booth.id)
+  const isVisited = visitedBoothIdSet.value.has(booth.id)
   let fill = '#e5e7eb'
   let stroke = '#ffffff'
 
@@ -577,7 +712,7 @@ const getBoothStyle = (booth) => {
     fill,
     stroke,
     strokeWidth: '2px',
-    opacity: isVisited ? 1 : 0.42
+    opacity: currentView.value === 'map' ? (isVisited ? 1 : 0.42) : 1
   }
 }
 
@@ -656,9 +791,15 @@ const generateBooths = (grid, ROWS, COLS) => {
 const attachBreweries = () => {
   const breweryMap = new Map()
   const scoreMap = new Map()
+  const summaryMap = new Map()
 
   breweryScores.forEach(s => {
     scoreMap.set(s.id, s)
+  })
+  breweryFlavor.forEach(f => {
+    if (f && f.id) {
+      summaryMap.set(f.id, f.summary || '')
+    }
   })
 
   for (const b of breweriesData) {
@@ -689,7 +830,11 @@ const attachBreweries = () => {
       rawName,
       region: regionId,
       regionName: regionNameJa,
-      taste
+      taste,
+      address: b['住所'] || '',
+      brand: b['代表銘柄'] || '',
+      url: b.URL || '',
+      summary: summaryMap.get(b.id) || ''
     })
   }
 
@@ -702,51 +847,180 @@ const initMap = () => {
   attachBreweries()
 }
 
-const loadVisited = () => {
-  const newFormat = localStorage.getItem('visitedBreweries')
-  if (newFormat) {
-    try {
-      visitedBreweryIds.value = JSON.parse(newFormat)
-      const records = {}
-      visitedBreweryIds.value.forEach(id => {
-        records[id] = { visited: true }
-      })
-      visitRecords.value = records
+const createDefaultBoothState = (id) => ({
+  id: String(id),
+  visited: false,
+  favorite: false,
+  memo: ''
+})
+
+const ensureBoothState = (id) => {
+  const key = String(id)
+  if (!boothStates.value[key]) {
+    boothStates.value[key] = createDefaultBoothState(key)
+  }
+  return boothStates.value[key]
+}
+
+const ensureAllBoothStates = () => {
+  let added = false
+  const next = { ...boothStates.value }
+  for (const [id] of breweries.value) {
+    if (!next[id]) {
+      next[id] = createDefaultBoothState(id)
+      added = true
+    }
+  }
+  if (added) {
+    boothStates.value = next
+  }
+  return added
+}
+
+const normalizeStateMap = (parsed) => {
+  const normalized = {}
+  let shouldRewrite = false
+
+  const assignNormalized = (id, raw) => {
+    const key = String(id)
+    if (!key) return
+
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      const memoRaw = typeof raw.memo === 'string' ? raw.memo : ''
+      const memo = memoRaw.slice(0, MEMO_MAX_LENGTH)
+      normalized[key] = {
+        id: key,
+        visited: !!raw.visited,
+        favorite: typeof raw.favorite === 'boolean' ? raw.favorite : false,
+        memo
+      }
+      if (
+        String(raw.id ?? key) !== key ||
+        typeof raw.favorite !== 'boolean' ||
+        typeof raw.memo !== 'string' ||
+        raw.memo !== memo
+      ) {
+        shouldRewrite = true
+      }
       return
+    }
+
+    shouldRewrite = true
+    normalized[key] = {
+      id: key,
+      visited: !!raw,
+      favorite: false,
+      memo: ''
+    }
+  }
+
+  if (Array.isArray(parsed)) {
+    shouldRewrite = true
+    parsed.forEach((entry) => {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+        if (entry.id != null) {
+          assignNormalized(entry.id, entry)
+        }
+      } else if (entry != null) {
+        assignNormalized(String(entry), { id: String(entry), visited: true })
+      }
+    })
+  } else if (parsed && typeof parsed === 'object') {
+    Object.entries(parsed).forEach(([id, raw]) => assignNormalized(id, raw))
+  } else {
+    shouldRewrite = true
+  }
+
+  return { normalized, shouldRewrite }
+}
+
+const buildLegacyStateMap = () => {
+  const visitedIds = new Set()
+
+  const visitedBreweries = localStorage.getItem('visitedBreweries')
+  if (visitedBreweries) {
+    try {
+      const parsed = JSON.parse(visitedBreweries)
+      if (Array.isArray(parsed)) {
+        parsed.forEach(id => visitedIds.add(String(id)))
+      }
     } catch {
       // noop
     }
   }
 
-  const stored = localStorage.getItem('sake_visited')
-  if (stored) {
+  const sakeVisited = localStorage.getItem('sake_visited')
+  if (sakeVisited) {
     try {
-      const parsed = JSON.parse(stored)
-      const ids = []
-      const records = {}
+      const parsed = JSON.parse(sakeVisited)
       if (Array.isArray(parsed)) {
-        parsed.forEach(id => {
-          ids.push(String(id))
-          records[id] = { visited: true }
-        })
-      } else {
-        Object.keys(parsed).forEach(id => {
-          if (parsed[id].visited) {
-            ids.push(id)
-            records[id] = { visited: true }
-          }
+        parsed.forEach(id => visitedIds.add(String(id)))
+      } else if (parsed && typeof parsed === 'object') {
+        Object.keys(parsed).forEach((id) => {
+          if (parsed[id]?.visited) visitedIds.add(String(id))
         })
       }
-      visitedBreweryIds.value = ids
-      visitRecords.value = records
     } catch {
       // noop
     }
+  }
+
+  const legacy = {}
+  visitedIds.forEach((id) => {
+    legacy[id] = {
+      id,
+      visited: true,
+      favorite: false,
+      memo: ''
+    }
+  })
+  return legacy
+}
+
+const triggerLightHaptic = () => {
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    navigator.vibrate(10)
   }
 }
 
-const saveVisited = () => {
-  localStorage.setItem('visitedBreweries', JSON.stringify(visitedBreweryIds.value))
+const saveBoothStates = ({ withHaptics = false } = {}) => {
+  localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(boothStates.value))
+  if (withHaptics) {
+    triggerLightHaptic()
+  }
+}
+
+const loadBoothStates = () => {
+  let loaded = {}
+  let shouldRewrite = false
+
+  const stored = localStorage.getItem(LOCAL_STATE_KEY)
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored)
+      const result = normalizeStateMap(parsed)
+      loaded = result.normalized
+      shouldRewrite = result.shouldRewrite
+    } catch {
+      shouldRewrite = true
+    }
+  }
+
+  if (!Object.keys(loaded).length) {
+    const legacy = buildLegacyStateMap()
+    if (Object.keys(legacy).length) {
+      loaded = legacy
+      shouldRewrite = true
+    }
+  }
+
+  boothStates.value = loaded
+  if (ensureAllBoothStates()) {
+    shouldRewrite = true
+  }
+  if (shouldRewrite) {
+    saveBoothStates()
+  }
 }
 
 const mapBoothsWithBreweryData = computed(() => {
@@ -764,9 +1038,27 @@ const mapBoothsWithBreweryData = computed(() => {
       name,
       nameLines: formatNameWithLineBreaks(rawName),
       estimated: brewery ? brewery.taste : { sweetDry: 0, lightRich: 0, aroma: 0 },
-      region: brewery ? brewery.region : null
+      region: brewery ? brewery.region : null,
+      address: brewery ? brewery.address : '',
+      brand: brewery ? brewery.brand : '',
+      url: brewery ? brewery.url : '',
+      summary: brewery ? brewery.summary : ''
     }
   })
+})
+
+const favoriteList = computed(() => {
+  const favorites = []
+  for (const booth of mapBoothsWithBreweryData.value) {
+    if (booth.isEmpty) continue
+    const state = boothStates.value[booth.id]
+    if (!state?.favorite) continue
+    favorites.push({
+      ...booth,
+      visited: !!state.visited
+    })
+  }
+  return favorites
 })
 
 const validBooths = computed(() => mapBoothsWithBreweryData.value)
@@ -831,11 +1123,14 @@ const refreshPanelOverlap = () => {
 
 const estimatePanelOverlap = () => {
   const viewport = mapViewportRef.value
-  if (!viewport) return PANEL_OVERLAP_FALLBACK
+  const fallback = panelExpanded.value ? PANEL_OVERLAP_FALLBACK_EXPANDED : PANEL_OVERLAP_FALLBACK_COLLAPSED
+  if (!viewport) return fallback
 
-  const estimatedPanelHeight = Math.min(window.innerHeight * PANEL_HEIGHT_RATIO_ESTIMATE, PANEL_HEIGHT_CAP_PX)
+  const ratio = panelExpanded.value ? PANEL_HEIGHT_RATIO_EXPANDED : PANEL_HEIGHT_RATIO_COLLAPSED
+  const cap = panelExpanded.value ? PANEL_HEIGHT_CAP_EXPANDED : PANEL_HEIGHT_CAP_COLLAPSED
+  const estimatedPanelHeight = Math.min(window.innerHeight * ratio, cap)
   const boundedHeight = Math.min(viewport.clientHeight - 24, estimatedPanelHeight + 18)
-  return Math.max(PANEL_OVERLAP_FALLBACK, boundedHeight)
+  return Math.max(fallback, boundedHeight)
 }
 
 const cancelMapAnimation = () => {
@@ -1019,6 +1314,11 @@ const selectBooth = (booth) => {
 
   overviewAnchorBoothId.value = null
   const sameBooth = selectedBoothId.value === booth.id
+  if (!sameBooth) {
+    panelExpanded.value = false
+  }
+  panelDragOffsetPx.value = 0
+  panelDragState.value = null
   selectedBoothId.value = booth.id
 
   if (sameBooth) {
@@ -1027,8 +1327,85 @@ const selectBooth = (booth) => {
 }
 
 const closeDetailPanel = () => {
+  panelExpanded.value = false
+  panelDragOffsetPx.value = 0
+  panelDragState.value = null
   overviewAnchorBoothId.value = selectedBoothId.value
   selectedBoothId.value = null
+}
+
+const onPanelPointerDown = (event) => {
+  if (!showDetailPanel.value) return
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+
+  panelDragState.value = {
+    pointerId: event.pointerId,
+    startY: event.clientY,
+    active: false
+  }
+  panelDragOffsetPx.value = 0
+}
+
+const onPanelPointerMove = (event) => {
+  const drag = panelDragState.value
+  if (!drag || drag.pointerId !== event.pointerId) return
+
+  const deltaY = event.clientY - drag.startY
+  if (!drag.active) {
+    if (Math.abs(deltaY) < PANEL_DRAG_ACTIVATION_THRESHOLD) return
+    drag.active = true
+    const panel = bottomPanelRef.value
+    if (panel && panel.setPointerCapture) {
+      panel.setPointerCapture(event.pointerId)
+    }
+  }
+
+  if (deltaY >= 0) {
+    panelDragOffsetPx.value = Math.min(deltaY, 420)
+  } else if (panelExpanded.value) {
+    panelDragOffsetPx.value = Math.max(deltaY * 0.45, -72)
+  } else {
+    panelDragOffsetPx.value = Math.max(deltaY, -PANEL_DRAG_UP_PULL_LIMIT)
+  }
+
+  if (event.cancelable) {
+    event.preventDefault()
+  }
+}
+
+const settlePanelDrag = (event, cancelled = false) => {
+  const drag = panelDragState.value
+  if (!drag || drag.pointerId !== event.pointerId) return
+
+  const panel = bottomPanelRef.value
+  if (panel && panel.hasPointerCapture && panel.hasPointerCapture(event.pointerId)) {
+    panel.releasePointerCapture(event.pointerId)
+  }
+
+  const wasActiveDrag = drag.active
+  const deltaY = panelDragOffsetPx.value
+  panelDragState.value = null
+  panelDragOffsetPx.value = 0
+
+  if (!wasActiveDrag) return
+  if (cancelled) return
+
+  if (deltaY >= PANEL_DRAG_CLOSE_THRESHOLD) {
+    closeDetailPanel()
+    return
+  }
+
+  if (deltaY <= -PANEL_DRAG_EXPAND_THRESHOLD && !panelExpanded.value) {
+    panelExpanded.value = true
+  }
+}
+
+const onPanelPointerUp = (event) => {
+  settlePanelDrag(event, false)
+}
+
+const onPanelPointerCancel = (event) => {
+  settlePanelDrag(event, true)
 }
 
 const onMapPointerDown = (event) => {
@@ -1064,16 +1441,58 @@ const clearPointerState = () => {
   pointerState.value = null
 }
 
-const toggleVisited = (id) => {
-  const index = visitedBreweryIds.value.indexOf(id)
-  if (index === -1) {
-    visitedBreweryIds.value.push(id)
-    visitRecords.value[id] = { visited: true, visitedAt: new Date().toISOString() }
-  } else {
-    visitedBreweryIds.value.splice(index, 1)
-    delete visitRecords.value[id]
+const clearFavoritePulseTimer = () => {
+  if (favoritePulseTimerId.value !== null) {
+    clearTimeout(favoritePulseTimerId.value)
+    favoritePulseTimerId.value = null
   }
-  saveVisited()
+}
+
+const startFavoritePulse = (id) => {
+  clearFavoritePulseTimer()
+  favoritePulseBoothId.value = id
+  favoritePulseTimerId.value = setTimeout(() => {
+    favoritePulseBoothId.value = null
+    favoritePulseTimerId.value = null
+  }, FAVORITE_PULSE_MS)
+}
+
+const clearMemoSaveTimer = () => {
+  if (memoSaveTimerId.value !== null) {
+    clearTimeout(memoSaveTimerId.value)
+    memoSaveTimerId.value = null
+  }
+}
+
+const scheduleMemoSave = () => {
+  clearMemoSaveTimer()
+  memoSaveTimerId.value = setTimeout(() => {
+    memoSaveTimerId.value = null
+    saveBoothStates({ withHaptics: true })
+  }, MEMO_SAVE_DEBOUNCE_MS)
+}
+
+const toggleVisited = (id) => {
+  const state = ensureBoothState(id)
+  state.visited = !state.visited
+  saveBoothStates({ withHaptics: true })
+}
+
+const toggleFavorite = (id) => {
+  const state = ensureBoothState(id)
+  state.favorite = !state.favorite
+  startFavoritePulse(id)
+  saveBoothStates({ withHaptics: true })
+}
+
+const onMemoInput = (event) => {
+  if (!selectedBoothId.value) return
+
+  const value = String(event.target.value || '').slice(0, MEMO_MAX_LENGTH)
+  memoDraft.value = value
+  const state = ensureBoothState(selectedBoothId.value)
+  state.memo = value
+  scheduleMemoSave()
 }
 
 const getBarPosition = (z, min, max) => {
@@ -1110,9 +1529,10 @@ const getAromaLabel = (z) => {
 
 const resetVisited = () => {
   if (confirm('訪問履歴をすべてリセットしますか？')) {
-    visitedBreweryIds.value = []
-    visitRecords.value = {}
-    saveVisited()
+    Object.values(boothStates.value).forEach((state) => {
+      state.visited = false
+    })
+    saveBoothStates({ withHaptics: true })
     overviewAnchorBoothId.value = null
     selectedBoothId.value = null
   }
@@ -1122,21 +1542,35 @@ const onResize = () => {
   scheduleFocusRecalc(false)
 }
 
-watch(selectedBoothId, async () => {
+watch(selectedBoothId, async (id) => {
+  clearMemoSaveTimer()
+  memoDraft.value = id ? (boothStates.value[id]?.memo || '') : ''
   await nextTick()
   scheduleFocusRecalc(true)
 })
 
 watch(currentView, async (view) => {
-  if (view === 'progress') return
+  if (view !== 'map' && view !== 'heatmap') return
   await nextTick()
   scheduleFocusRecalc(false)
+})
+
+watch(panelExpanded, async () => {
+  if (!showDetailPanel.value) return
+  await nextTick()
+  scheduleFocusRecalc(true)
 })
 
 watch(showDetailPanel, async () => {
   await nextTick()
   cancelRecalcTimer()
-  if (!showDetailPanel.value) return
+  if (!showDetailPanel.value) {
+    clearMemoSaveTimer()
+    panelExpanded.value = false
+    panelDragOffsetPx.value = 0
+    panelDragState.value = null
+    return
+  }
   mapRecalcTimerId.value = setTimeout(() => {
     scheduleFocusRecalc(true)
     mapRecalcTimerId.value = null
@@ -1145,7 +1579,7 @@ watch(showDetailPanel, async () => {
 
 onMounted(async () => {
   initMap()
-  loadVisited()
+  loadBoothStates()
   await nextTick()
   centerOverview(false)
   window.addEventListener('resize', onResize, { passive: true })
@@ -1154,6 +1588,8 @@ onMounted(async () => {
 onUnmounted(() => {
   cancelMapAnimation()
   cancelRecalcTimer()
+  clearMemoSaveTimer()
+  clearFavoritePulseTimer()
   window.removeEventListener('resize', onResize)
 })
 </script>
@@ -1165,7 +1601,7 @@ onUnmounted(() => {
   --ink-subtle: #6b6b6b;
   --ink-muted: #888888;
   --accent: #1e2a38;
-  --paper-base: #f5f3ef;
+  --paper-base: #fcfaf2; /* わずかに黄みのある白（和紙の地色） */
   --paper-elevated: #ffffff;
   --paper-modal: #fdfcf9;
   --line-soft: rgba(0, 0, 0, 0.08);
@@ -1183,6 +1619,18 @@ onUnmounted(() => {
   color: var(--ink);
   overflow: hidden;
   font-family: "Yu Gothic", "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+
+/* 背景のベースカラーと和紙テクスチャの合成 */
+.map-container {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--paper-base);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.05; /* 極薄度合い */
 }
 
 .app-header {
@@ -1248,7 +1696,7 @@ onUnmounted(() => {
   height: var(--tab-height);
   z-index: 39;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   background: var(--paper-modal);
   border-bottom: 1px solid var(--line-soft);
 }
@@ -1386,34 +1834,6 @@ onUnmounted(() => {
   background: v-bind(aromaGradient);
 }
 
-.meta-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-12);
-}
-
-.meta-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--ink-subtle);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.reset-btn {
-  border: 1px solid rgba(30, 42, 56, 0.25);
-  background: #ffffff;
-  color: var(--accent);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  padding: var(--space-8) var(--space-12);
-  white-space: nowrap;
-}
-
 .map-viewport {
   flex: 1;
   min-height: 0;
@@ -1497,6 +1917,22 @@ onUnmounted(() => {
   fill: #8b4b5e;
   font-weight: 700;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.favorite-star {
+  font-size: 13px;
+  fill: #b2892b;
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.visited-check.is-visible,
+.favorite-star.is-visible {
+  opacity: 1;
 }
 
 .selected-highlight {
@@ -1546,37 +1982,63 @@ onUnmounted(() => {
   animation: tabFadeIn 0.24s ease;
 }
 
+.favorites-page {
+  height: 100%;
+  overflow: hidden;
+  padding: var(--space-16);
+  animation: tabFadeIn 0.24s ease;
+}
+
 .bottom-panel {
+  --panel-base-translate: 0px;
+  --panel-drag-offset: 0px;
+  --taste-value-width: clamp(64px, 20vw, 82px);
   position: fixed;
   inset: auto 0 0 0;
   z-index: 50;
+  transform: translate3d(0, calc(var(--panel-base-translate) + var(--panel-drag-offset)), 0);
   background: var(--paper-modal);
   border-radius: 24px 24px 0 0;
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
-  padding: var(--space-12) var(--space-16) calc(var(--space-24) + env(safe-area-inset-bottom, 0px));
-  max-height: min(52dvh, 380px);
+  padding: 10px var(--space-16) calc(var(--space-16) + env(safe-area-inset-bottom, 0px));
+  max-height: min(40dvh, 300px);
   overflow-y: auto;
+  touch-action: none;
+}
+
+.bottom-panel.is-expanded {
+  max-height: min(72dvh, 560px);
+}
+
+.bottom-panel.is-dragging {
+  transition: none !important;
 }
 
 .panel-handle {
   width: 40px;
   height: 4px;
   border-radius: 999px;
-  margin: 0 auto var(--space-16);
+  margin: 0 auto 10px;
   background: rgba(30, 42, 56, 0.24);
+  cursor: grab;
+  touch-action: none;
+}
+
+.bottom-panel.is-dragging .panel-handle {
+  cursor: grabbing;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--space-16);
+  margin-bottom: 12px;
 }
 
 .title-row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: 4px;
 }
 
 .panel-header h2 {
@@ -1595,8 +2057,8 @@ onUnmounted(() => {
 }
 
 .close-btn {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border: 0;
   border-radius: 999px;
   background: rgba(30, 42, 56, 0.08);
@@ -1608,64 +2070,49 @@ onUnmounted(() => {
 .panel-body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-24);
+  gap: 12px;
 }
 
 .taste-bars {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: 10px;
 }
 
 .taste-row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
-}
-
-.taste-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 34px 16px minmax(0, 1fr) 16px var(--taste-value-width);
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-12);
+  gap: 8px;
 }
 
 .taste-title {
-  min-width: 30px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ink-subtle);
 }
 
 .taste-current-label {
-  font-size: 16px;
+  width: var(--taste-value-width);
+  justify-self: end;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
-}
-
-.taste-bar-wrapper {
-  display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  border-left: 1px solid var(--line-soft);
-  padding-left: var(--space-8);
+  white-space: nowrap;
+  text-align: right;
 }
 
 .bar-limit-label {
-  min-width: 38px;
-  font-size: 13px;
+  font-size: 11px;
   color: var(--ink-subtle);
   font-weight: 500;
-}
-
-.bar-limit-label.min {
-  text-align: right;
+  text-align: center;
 }
 
 .bar-container {
   position: relative;
-  flex: 1;
-  height: 12px;
+  min-width: 0;
+  height: 10px;
   display: flex;
   align-items: center;
 }
@@ -1693,8 +2140,8 @@ onUnmounted(() => {
 .center-line {
   position: absolute;
   left: 50%;
-  top: -2px;
-  bottom: -2px;
+  top: -1px;
+  bottom: -1px;
   width: 2px;
   background: var(--accent);
   opacity: 0.3;
@@ -1704,8 +2151,8 @@ onUnmounted(() => {
 .pointer {
   position: absolute;
   top: 50%;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   background: #ffffff;
   border: 2px solid var(--accent);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
@@ -1715,8 +2162,55 @@ onUnmounted(() => {
 }
 
 .visited-control {
-  padding-top: var(--space-16);
+  padding-top: 10px;
   border-top: 1px solid var(--line-soft);
+}
+
+.status-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-12);
+}
+
+.brewery-extra {
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+  animation: tabFadeIn 0.2s ease;
+}
+
+.extra-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.extra-item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.extra-item dt {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+.extra-item dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+.extra-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .visited-checkbox-label {
@@ -1770,6 +2264,75 @@ onUnmounted(() => {
   outline-offset: 2px;
 }
 
+.favorite-toggle-btn {
+  border: 1px solid rgba(30, 42, 56, 0.18);
+  background: #ffffff;
+  color: #556170;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.favorite-toggle-btn.is-active {
+  color: #7a5a12;
+  border-color: rgba(178, 137, 43, 0.46);
+  background: #fff7df;
+}
+
+.favorite-toggle-btn.is-pulsing {
+  animation: favoritePulse 0.26s ease;
+}
+
+.favorite-icon {
+  width: 14px;
+  text-align: center;
+}
+
+.memo-section {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.memo-title {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-subtle);
+  font-weight: 700;
+}
+
+.memo-textarea {
+  width: 100%;
+  min-height: 88px;
+  max-height: 150px;
+  border: 1px solid rgba(30, 42, 56, 0.16);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.memo-textarea:focus-visible {
+  outline: 2px solid rgba(30, 42, 56, 0.28);
+  outline-offset: 1px;
+}
+
+.memo-counter {
+  margin: 0;
+  text-align: right;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
 .panel-slide-enter-active,
 .panel-slide-leave-active {
   transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
@@ -1777,7 +2340,7 @@ onUnmounted(() => {
 
 .panel-slide-enter-from,
 .panel-slide-leave-to {
-  transform: translateY(24px);
+  --panel-base-translate: 24px;
   opacity: 0;
 }
 
@@ -1787,6 +2350,18 @@ onUnmounted(() => {
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes favoritePulse {
+  0% {
+    transform: scale(0.9);
+  }
+  55% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 

@@ -7,7 +7,7 @@ export const REGIONS = ['上越', '中越', '下越', '佐渡']
  * 酒造データと訪問記録から進捗統計を算出するコンポーザブル
  *
  * @param {import('vue').Ref<Map>} breweries - BreweryドメインモデルのMap（id => brewery）
- * @param {import('vue').Ref<Object>} visitRecords - 訪問記録オブジェクト（id => { visited }）
+ * @param {import('vue').Ref<Object>} visitRecords - ブース状態オブジェクト（id => { id, visited, favorite, memo }）
  * @returns 全体・地域別の集計値（computed）
  */
 export function useProgressStats(breweries, visitRecords) {

@@ -134,6 +134,12 @@
       </div>
     </section>
 
+    <section class="section reset-section">
+      <button class="reset-history-btn" type="button" @click="$emit('resetVisited')">
+        履歴リセット
+      </button>
+    </section>
+
   </div>
 </template>
 
@@ -152,7 +158,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['regionClick'])
+defineEmits(['regionClick', 'resetVisited'])
 
 // --- 集計 ---
 const { regionStats, totalCount, totalVisited, totalPercentage } = useProgressStats(
@@ -352,5 +358,21 @@ const regionFill = (region) => {
   background: linear-gradient(180deg, #33485f, #1e2a38);
   border-radius: 9999px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reset-section {
+  padding-top: var(--space-16);
+  padding-bottom: var(--space-16);
+}
+
+.reset-history-btn {
+  width: 100%;
+  border: 1px solid rgba(30, 42, 56, 0.25);
+  background: #ffffff;
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  padding: var(--space-12) var(--space-16);
 }
 </style>
