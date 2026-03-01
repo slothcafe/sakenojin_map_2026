@@ -4,7 +4,7 @@
     <header class="app-header">
       <div class="header-inner">
         <div class="title-block">
-          <h1>酒の陣2026</h1>
+          <h1>にいがた酒の陣 2026</h1>
           <p>会場マップ</p>
         </div>
         <div class="header-metrics" aria-live="polite">
@@ -26,21 +26,21 @@
         :class="{ 'is-active': currentView === 'map' }"
         @click="currentView = 'map'"
       >
-        マップ
+        会場ガイド
       </button>
       <button
         class="tab-btn"
         :class="{ 'is-active': currentView === 'heatmap' }"
         @click="currentView = 'heatmap'"
       >
-        ヒートマップ
+        味わい傾向
       </button>
       <button
         class="tab-btn"
         :class="{ 'is-active': currentView === 'favorites' }"
         @click="currentView = 'favorites'"
       >
-        ★お気に入り
+        お気に入り
       </button>
       <button
         class="tab-btn"
@@ -55,7 +55,7 @@
       <main v-if="isMapLikeView" class="map-page">
         <div class="map-topbar">
           <div v-if="currentView === 'map'" class="legend-row">
-            <div v-for="r in regionDataList" :key="r.id" class="legend-chip">
+            <div v-for="r in regionDataList" :key="r.id" :class="['legend-chip', 'pattern-' + r.id]">
               <span class="legend-color" :style="{ backgroundColor: r.color, borderColor: r.stroke }"></span>
               <span>{{ r.name }}</span>
             </div>
@@ -83,178 +83,346 @@
 
         </div>
 
-        <div
-          ref="mapViewportRef"
-          class="map-viewport"
-          :class="{ 'is-zoomed': isZoomed }"
-          @pointerdown="onMapPointerDown"
-          @pointerup="onMapPointerUp"
-          @pointercancel="clearPointerState"
-          @pointerleave="clearPointerState"
-        >
-          <div class="map-canvas" :style="mapCanvasFrameStyle">
-            <svg
-              :width="mapWidth"
-              :height="mapHeight"
-              class="booth-map"
-              :style="mapSvgStyle"
-            >
-              <defs>
-                <linearGradient id="booth-sheen" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#ffffff" stop-opacity="0.24" />
-                  <stop offset="45%" stop-color="#ffffff" stop-opacity="0.12" />
-                  <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-                </linearGradient>
-              </defs>
+        <div class="map-stage">
+          <div
+            ref="mapViewportRef"
+            class="map-viewport"
+            :class="{ 'is-zoomed': isZoomed }"
+            @pointerdown="onMapPointerDown"
+            @pointerup="onMapPointerUp"
+            @pointercancel="clearPointerState"
+            @pointerleave="clearPointerState"
+          >
+            <div class="map-canvas" :style="mapCanvasFrameStyle">
+              <svg
+                :width="mapWidth"
+                :height="mapHeight"
+                class="booth-map"
+                :style="mapSvgStyle"
+              >
+                <defs>
+                  <linearGradient id="booth-sheen" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8" />
+                    <stop offset="30%" stop-color="#ffffff" stop-opacity="0.1" />
+                    <stop offset="70%" stop-color="#000000" stop-opacity="0.02" />
+                    <stop offset="100%" stop-color="#000000" stop-opacity="0.2" />
+                  </linearGradient>
+                  <pattern id="shippou-pattern" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)">
+                    <circle cx="0" cy="12" r="10" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                    <circle cx="24" cy="12" r="10" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                    <circle cx="12" cy="0" r="10" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                    <circle cx="12" cy="24" r="10" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                  </pattern>
+                  <pattern id="asanoha-pattern" x="0" y="0" width="30" height="17.32" patternUnits="userSpaceOnUse" patternTransform="scale(0.7)">
+                    <path d="M0,8.66 L15,0 L30,8.66 L15,17.32 Z" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                    <path d="M15,0 L15,17.32 M0,8.66 L30,8.66 M7.5,4.33 L22.5,12.99 M22.5,4.33 L7.5,12.99" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                  </pattern>
+                  <pattern id="kikkou-pattern" x="0" y="0" width="20" height="34.64" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)">
+                    <path d="M10,0 L20,5.77 L20,11.55 L10,17.32 L0,11.55 L0,5.77 Z" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                    <path d="M10,17.32 L20,23.09 L20,28.87 L10,34.64 L0,28.87 L0,23.09 Z" fill="none" stroke="#221d14" stroke-opacity="0.12" stroke-width="1.2" />
+                  </pattern>
+                  <pattern id="seigaiha-pattern" x="0" y="0" width="40" height="20" patternUnits="userSpaceOnUse" patternTransform="scale(0.7)">
+                    <path d="M0,20 A10,10 0 0,1 20,20 A10,10 0 0,1 40,20 M0,20 A6,6 0 0,1 20,20 A6,6 0 0,1 40,20" fill="none" stroke="#221d14" stroke-opacity="0.08" stroke-width="1.2" />
+                    <path d="M10,10 A10,10 0 0,1 30,10 A10,10 0 0,1 50,10 M10,10 A6,6 0 0,1 30,10 A6,6 0 0,1 50,10" fill="none" stroke="#221d14" stroke-opacity="0.08" stroke-width="1.2" />
+                  </pattern>
+                  <linearGradient id="booth-touch-glow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#fffef5" stop-opacity="0.95" />
+                    <stop offset="30%" stop-color="#f9f2d4" stop-opacity="0.5" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                  </linearGradient>
+                  <linearGradient id="metal-plaque" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#f5f1df" />
+                    <stop offset="48%" stop-color="#d5c39a" />
+                    <stop offset="100%" stop-color="#b29362" />
+                  </linearGradient>
+                  <linearGradient id="metal-line" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#fff9df" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="#c6a775" stop-opacity="0" />
+                  </linearGradient>
+                  <pattern id="wood-grain" x="0" y="0" width="48" height="24" patternUnits="userSpaceOnUse">
+                    <rect width="48" height="24" fill="#8c5a2e" />
+                    <path d="M-4 8 C6 2, 18 2, 30 8 C38 12, 44 12, 54 8" fill="none" stroke="#b47b42" stroke-opacity="0.5" stroke-width="1.2" />
+                    <path d="M-6 17 C6 12, 18 12, 30 17 C42 22, 50 22, 62 17" fill="none" stroke="#6f431f" stroke-opacity="0.48" stroke-width="1.2" />
+                  </pattern>
+                  <filter id="pine-air" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="0.8" />
+                  </filter>
+                  <path id="pine-silhouette" d="M0 30 C18 8, 54 8, 72 30 C58 27, 50 34, 43 46 C36 34, 24 27, 0 30 Z" />
+                  <filter id="recommend-glow-blur" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" />
+                  </filter>
+                </defs>
 
-              <g v-for="booth in validBooths" :key="booth.id">
-                <rect
-                  v-if="!booth.isEmpty"
-                  :x="booth.x"
-                  :y="booth.y"
-                  width="64"
-                  height="64"
-                  class="booth-rect"
-                  :style="getBoothStyle(booth)"
-                />
+                <g class="pine-atmosphere" aria-hidden="true">
+                  <g class="pine-cluster pine-cluster-top" filter="url(#pine-air)">
+                    <use href="#pine-silhouette" x="548" y="22" />
+                    <use href="#pine-silhouette" x="592" y="12" transform="scale(0.86)" />
+                    <use href="#pine-silhouette" x="516" y="38" transform="scale(0.74)" />
+                  </g>
+                  <g class="pine-cluster pine-cluster-bottom" filter="url(#pine-air)">
+                    <use href="#pine-silhouette" x="38" y="502" transform="scale(1.02)" />
+                    <use href="#pine-silhouette" x="82" y="538" transform="scale(0.82)" />
+                    <use href="#pine-silhouette" x="12" y="560" transform="scale(0.74)" />
+                  </g>
+                </g>
 
-                <rect
-                  v-if="!booth.isEmpty"
-                  :x="booth.x"
-                  :y="booth.y"
-                  width="64"
-                  height="64"
-                  rx="6"
-                  class="booth-gradient-overlay"
-                />
+                <g v-for="booth in validBooths" :key="booth.id">
+                  <rect
+                    v-if="!booth.isEmpty"
+                    :x="booth.x"
+                    :y="booth.y"
+                    width="64"
+                    height="64"
+                    class="booth-rect"
+                    :style="getBoothStyle(booth)"
+                  />
 
-                <rect
-                  v-if="!booth.isEmpty"
-                  :x="booth.x"
-                  :y="booth.y"
-                  width="64"
-                  height="64"
-                  rx="6"
-                  class="booth-border-overlay"
-                />
+                  <rect
+                    v-if="!booth.isEmpty"
+                    :x="booth.x"
+                    :y="booth.y"
+                    width="64"
+                    height="64"
+                    rx="8"
+                    class="booth-pattern-overlay"
+                    :fill="getBoothPatternUrl(booth)"
+                  />
 
-                <rect
-                  v-else
-                  :x="booth.x"
-                  :y="booth.y"
-                  width="64"
-                  height="64"
-                  class="booth-rect is-empty"
-                />
+                  <rect
+                    v-if="!booth.isEmpty"
+                    :x="booth.x"
+                    :y="booth.y"
+                    width="64"
+                    height="64"
+                    rx="8"
+                    class="booth-gradient-overlay"
+                  />
 
-                <text
-                  v-if="!booth.isEmpty"
-                  :x="booth.x + 32"
-                  :y="booth.y + 16"
-                  text-anchor="middle"
-                  class="booth-text"
-                >
-                  {{ booth.id }}
-                </text>
-
-                <text
-                  v-if="!booth.isEmpty"
-                  :x="booth.x + 12"
-                  :y="booth.y + 16"
-                  text-anchor="middle"
-                  class="visited-check"
-                  :class="{ 'is-visible': visitedBoothIdSet.has(booth.id) }"
-                >
-                  ✔
-                </text>
-
-                <text
-                  v-if="!booth.isEmpty"
-                  :x="booth.x + 52"
-                  :y="booth.y + 16"
-                  text-anchor="middle"
-                  class="favorite-star"
-                  :class="{ 'is-visible': favoriteBoothIdSet.has(booth.id) }"
-                >
-                  ★
-                </text>
-
-                <template v-if="!booth.isEmpty">
-                  <text
-                    v-for="(line, index) in booth.nameLines"
-                    :key="'name-' + index"
-                    :x="booth.x + 32"
-                    :y="booth.y + 44 - (booth.nameLines.length - 1) * 8 + index * 16"
-                    text-anchor="middle"
-                    class="booth-name-text"
-                    :class="{
-                      'is-small-text': booth.name === 'ラグーン ブリュワリー',
-                      'is-medium-text': booth.name === 'マスカガミ'
+                  <g
+                    v-if="!booth.isEmpty"
+                    class="recommend-highlight-group"
+                    :class="{ 
+                      'is-recommended': recommendedBoothIds.includes(booth.id),
+                      'is-flickering': recommendedBoothIds.includes(booth.id)
                     }"
+                    :key="`recommend-${booth.id}-${recommendBounceTrigger}`"
                   >
-                    {{ line }}
-                  </text>
-                </template>
-              </g>
+                    <rect
+                      :x="booth.x - 2"
+                      :y="booth.y - 2"
+                      width="68"
+                      height="68"
+                      rx="10"
+                      fill="none"
+                      stroke="#ff9e3d"
+                      stroke-width="5"
+                      stroke-opacity="0.7"
+                      filter="url(#recommend-glow-blur)"
+                      class="recommend-glow"
+                      pointer-events="none"
+                    />
+                    <rect
+                      :x="booth.x"
+                      :y="booth.y"
+                      width="64"
+                      height="64"
+                      rx="8"
+                      fill="none"
+                      stroke="#ffc285"
+                      stroke-width="3"
+                      class="recommend-border"
+                      pointer-events="none"
+                    />
+                  </g>
 
-              <g class="facility-layer" aria-hidden="true">
-                <g class="facility-zone">
                   <rect
-                    class="facility-zone-bg"
-                    :x="FACILITY_A_CENTER_X - FACILITY_ZONE_WIDTH / 2"
-                    :y="FACILITY_BASE_Y"
-                    :width="FACILITY_ZONE_WIDTH"
-                    :height="FACILITY_ZONE_HEIGHT"
-                    rx="12"
+                    v-if="!booth.isEmpty && boothTouchHighlightId === booth.id"
+                    :key="'touch-' + booth.id + '-' + boothTouchHighlightToken"
+                    :x="booth.x"
+                    :y="booth.y"
+                    width="64"
+                    height="64"
+                    rx="6"
+                    class="booth-touch-sheen"
                   />
+
+                  <rect
+                    v-if="!booth.isEmpty"
+                    :x="booth.x"
+                    :y="booth.y"
+                    width="64"
+                    height="64"
+                    rx="8"
+                    class="booth-border-overlay"
+                  />
+
+                  <rect
+                    v-else
+                    :x="booth.x"
+                    :y="booth.y"
+                    width="64"
+                    height="64"
+                    class="booth-rect is-empty"
+                  />
+
                   <text
-                    :x="FACILITY_A_CENTER_X"
-                    :y="FACILITY_BASE_Y + 24"
+                    v-if="!booth.isEmpty"
+                    :x="booth.x + 32"
+                    :y="booth.y + 16"
                     text-anchor="middle"
-                    class="facility-title"
+                    class="booth-text"
                   >
-                    A御猪口交換所
+                    {{ booth.id }}
                   </text>
+
+                  <text
+                    v-if="!booth.isEmpty"
+                    :x="booth.x + 12"
+                    :y="booth.y + 16"
+                    text-anchor="middle"
+                    class="visited-check"
+                    :class="{ 'is-visible': visitedBoothIdSet.has(booth.id) }"
+                  >
+                    ✔
+                  </text>
+
+                  <text
+                    v-if="!booth.isEmpty"
+                    :x="booth.x + 52"
+                    :y="booth.y + 16"
+                    text-anchor="middle"
+                    class="favorite-star"
+                    :class="{ 'is-visible': favoriteBoothIdSet.has(booth.id) }"
+                  >
+                    ★
+                  </text>
+
+                  <template v-if="!booth.isEmpty">
+                    <text
+                      v-for="(line, index) in booth.nameLines"
+                      :key="'name-' + index"
+                      :x="booth.x + 32"
+                      :y="booth.y + 44 - (booth.nameLines.length - 1) * 8 + index * 16"
+                      text-anchor="middle"
+                      class="booth-name-text"
+                      :class="{
+                        'is-small-text': booth.name === 'ラグーン ブリュワリー',
+                        'is-medium-text': booth.name === 'マスカガミ'
+                      }"
+                    >
+                      {{ line }}
+                    </text>
+                  </template>
                 </g>
 
-                <g class="stairs-zone">
-                  <rect
-                    v-for="step in STAIRS_STEP_COUNT"
-                    :key="'a-stair-' + step"
-                    :x="FACILITY_A_CENTER_X - 72 + (step - 1) * 20"
-                    :y="STAIRS_TOP_Y"
-                    width="12"
-                    height="36"
-                    class="stairs-step"
-                  />
-                  <text
-                    :x="FACILITY_A_CENTER_X"
-                    :y="STAIRS_TOP_Y+20"
-                    text-anchor="middle"
-                    class="stairs-label"
-                  >
-                    1F⇄2F 階段
-                  </text>
+                <g class="facility-layer" aria-hidden="true">
+                  <g class="facility-zone">
+                    <rect
+                      class="facility-zone-bg"
+                      :x="FACILITY_A_CENTER_X - FACILITY_ZONE_WIDTH / 2"
+                      :y="FACILITY_BASE_Y"
+                      :width="FACILITY_ZONE_WIDTH"
+                      :height="FACILITY_ZONE_HEIGHT"
+                      rx="12"
+                    />
+                    <rect
+                      class="facility-metal-line"
+                      :x="FACILITY_A_CENTER_X - FACILITY_ZONE_WIDTH / 2 + 8"
+                      :y="FACILITY_BASE_Y + 6"
+                      :width="FACILITY_ZONE_WIDTH - 16"
+                      :height="8"
+                      rx="4"
+                    />
+                    <text
+                      :x="FACILITY_A_CENTER_X"
+                      :y="FACILITY_BASE_Y + 34"
+                      text-anchor="middle"
+                      class="facility-title"
+                    >
+                      A御猪口交換所
+                    </text>
+                  </g>
+
+
                 </g>
 
-              </g>
-
-              <rect
-                v-if="selectedBooth && !selectedBooth.isEmpty"
-                :x="selectedBooth.x"
-                :y="selectedBooth.y"
-                width="64"
-                height="64"
-                fill="none"
-                stroke="#1E2A38"
-                stroke-width="4"
-                rx="4"
-                class="selected-highlight"
-                pointer-events="none"
-              />
-            </svg>
+                <rect
+                  v-if="selectedBooth && !selectedBooth.isEmpty"
+                  :x="selectedBooth.x"
+                  :y="selectedBooth.y"
+                  width="64"
+                  height="64"
+                  fill="none"
+                  stroke="#8a744b"
+                  stroke-width="2"
+                  rx="6"
+                  class="selected-highlight"
+                  pointer-events="none"
+                />
+              </svg>
+            </div>
           </div>
         </div>
+
+        <!-- ボトムカードエリア -->
+        <transition name="rec-fade" mode="out-in">
+          <!-- レコメンドカード -->
+          <div
+            v-if="!isZoomed && recommendation && !showFooterMessage"
+            class="recommendation-card"
+            :class="{ 'is-expanded': recExpanded }"
+            key="recommendation"
+          >
+            <div class="rec-header" @click="recExpanded = !recExpanded">
+              <span class="rec-icon">🌾</span>
+              <span class="rec-title">次の一杯のご提案</span>
+              <span class="rec-toggle-icon">{{ recExpanded ? '▴' : '▾' }}</span>
+            </div>
+
+            <!-- コンパクト表示（サマリー） -->
+            <div v-if="!recExpanded" class="rec-summary" @click="recExpanded = true">
+              <p v-if="recommendation.similarSummary" class="rec-summary-line">
+                <span class="rec-bullet">・</span><span class="rec-summary-label">近いタイプ：</span>{{ recommendation.similarSummary }}
+              </p>
+              <p v-if="recommendation.oppositeSummary" class="rec-summary-line">
+                <span class="rec-bullet">・</span><span class="rec-summary-label">対照タイプ：</span>{{ recommendation.oppositeSummary }}
+              </p>
+              <p v-if="recommendation.changeSummary" class="rec-summary-line">
+                <span class="rec-bullet">・</span><span class="rec-summary-label">気分チェンジ：</span>{{ recommendation.changeSummary }}
+              </p>
+              <p class="rec-expand-hint">詳しく見る ▾</p>
+            </div>
+
+            <!-- 展開表示（詳細） -->
+            <div v-else class="rec-body">
+              <p v-if="recommendation.visitIntro" class="rec-visit-intro">{{ recommendation.visitIntro }}</p>
+              <p v-if="recommendation.similarText" class="rec-line">
+                <span class="rec-bullet">・</span>{{ recommendation.intro }}<br>
+                <span class="rec-indent">{{ recommendation.similarText }}</span>
+              </p>
+              <p v-if="recommendation.oppositeText" class="rec-line">
+                <span class="rec-bullet">・</span>{{ recommendation.oppositeText }}
+              </p>
+              <p v-if="recommendation.changeText" class="rec-line">
+                <span class="rec-bullet">・</span>{{ recommendation.changeText }}
+              </p>
+              <p class="rec-footer">※AI傾向分析による参考提案です</p>
+              <p class="rec-collapse-hint" @click.stop="recExpanded = false">閉じる ▴</p>
+            </div>
+          </div>
+
+          <!-- フッターメッセージ -->
+          <div
+            v-else-if="!isZoomed && showFooterMessage"
+            class="recommendation-card footer-message-card"
+            key="footer-message"
+          >
+            <div class="rec-body static-message">
+              <p class="message-intro">{{ activeFooterMessage.line1 }}</p>
+              <p class="message-text">{{ activeFooterMessage.line2 }}</p>
+            </div>
+          </div>
+        </transition>
       </main>
 
       <main v-else-if="currentView === 'favorites'" class="favorites-page">
@@ -378,9 +546,9 @@
               <textarea
                 class="memo-textarea"
                 :value="memoDraft"
-                maxlength="200"
                 placeholder="気になった味わいや銘柄をメモ"
                 @input="onMemoInput"
+                @blur="onMemoBlur"
               ></textarea>
               <p class="memo-counter">{{ memoDraft.length }} / 200</p>
             </div>
@@ -424,6 +592,8 @@ import breweryScores from '../brewery_scores.json'
 import breweryFlavor from '../brewery_flavor.json'
 import ProgressView from './components/ProgressView.vue'
 import FavoritesView from './components/FavoritesView.vue'
+import { useRecommendation } from './composables/useRecommendation.js'
+import { getFooterState, FOOTER_MESSAGES } from './utils/footerMessage.js'
 
 const BOOTH_SIZE = 64
 const BLOCK_GAP_X = 24
@@ -434,12 +604,12 @@ const INNER_COLS = 2
 const INNER_ROWS = 2
 
 const OVERVIEW_SCALE = 0.6
-const FOCUSED_SCALE = 1.3
+const FOCUSED_SCALE = 1.08
 const TAP_MOVE_THRESHOLD = 10
 const TAP_TIME_THRESHOLD = 280
 const PANEL_OVERLAP_FALLBACK_COLLAPSED = 164
 const PANEL_OVERLAP_FALLBACK_EXPANDED = 310
-const MAP_EXTRA_BOTTOM = 252
+const MAP_EXTRA_BOTTOM = 140
 const MAP_MOTION_MS = 620
 const DETAIL_RECALC_DELAY_MS = 360
 const PANEL_HEIGHT_RATIO_COLLAPSED = 0.38
@@ -455,6 +625,7 @@ const LOCAL_STATE_KEY = 'sakenojin_state_v1'
 const MEMO_MAX_LENGTH = 200
 const MEMO_SAVE_DEBOUNCE_MS = 500
 const FAVORITE_PULSE_MS = 260
+const BOOTH_TOUCH_HIGHLIGHT_MS = 180
 
 const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
 const boothAreaHeight = BLOCKS_Y * (INNER_ROWS * BOOTH_SIZE) + (BLOCKS_Y - 1) * BLOCK_GAP_Y
@@ -464,14 +635,12 @@ const FACILITY_BASE_Y = boothAreaHeight + 24
 const FACILITY_ZONE_WIDTH = 232
 const FACILITY_ZONE_HEIGHT = 56
 const FACILITY_A_CENTER_X = Math.round(mapWidth * 0.56)
-const STAIRS_TOP_Y = FACILITY_BASE_Y + 82
-const STAIRS_STEP_COUNT = 7
 
 const regionDataList = [
-  { id: 'kaetsu', name: '下越', color: '#D6A9B8', stroke: '#C293A4' },
-  { id: 'chuetsu', name: '中越', color: '#A9C8A9', stroke: '#8EAF8E' },
-  { id: 'joetsu', name: '上越', color: '#AEB9C8', stroke: '#8E9BAC' },
-  { id: 'sado', name: '佐渡', color: '#D4B84F', stroke: '#B29739' }
+  { id: 'kaetsu', name: '下越', color: '#D6A9B8', stroke: '#C293A4', patternId: 'asanoha-pattern' },
+  { id: 'chuetsu', name: '中越', color: '#A9C8A9', stroke: '#8EAF8E', patternId: 'shippou-pattern' },
+  { id: 'joetsu', name: '上越', color: '#AEB9C8', stroke: '#8E9BAC', patternId: 'kikkou-pattern' },
+  { id: 'sado', name: '佐渡', color: '#D4B84F', stroke: '#B29739', patternId: 'seigaiha-pattern' }
 ]
 
 const heatmapAxes = [
@@ -484,12 +653,19 @@ const baseBooths = ref([])
 const breweries = ref(new Map())
 const boothStates = ref({})
 const selectedBoothId = ref(null)
+const lastTappedBoothId = ref(null)
 const currentView = ref('map')
 const heatmapAxis = ref('sweetDry')
 const memoDraft = ref('')
 const memoSaveTimerId = ref(null)
 const favoritePulseBoothId = ref(null)
 const favoritePulseTimerId = ref(null)
+const boothTouchHighlightId = ref(null)
+const boothTouchHighlightToken = ref(0)
+const boothTouchHighlightTimerId = ref(null)
+const recExpanded = ref(false)
+const recommendedBoothIds = ref([])
+const recommendBounceTrigger = ref(0)
 
 const mapViewportRef = ref(null)
 const bottomPanelRef = ref(null)
@@ -540,6 +716,20 @@ const favoriteBoothIdSet = computed(() => {
   return ids
 })
 const visitedBreweryIds = computed(() => Array.from(visitedBoothIdSet.value))
+
+const footerMessageState = computed(() => {
+  const total = validBooths.value.filter(b => !b.isEmpty).length
+  return getFooterState(total, visitedBreweryIds.value.length)
+})
+
+const showFooterMessage = computed(() => {
+  if (!recommendation.value) return true
+  const state = footerMessageState.value
+  return ['start', 'almost', 'late', 'complete'].includes(state)
+})
+
+const activeFooterMessage = computed(() => FOOTER_MESSAGES[footerMessageState.value])
+
 const regionStyleMap = computed(() => {
   return regionDataList.reduce((acc, region) => {
     acc[region.id] = { color: region.color, stroke: region.stroke, name: region.name }
@@ -688,6 +878,12 @@ const adjustSaturation = (hex, factor) => {
   b = Math.round(hue2rgb(p, q, h - 1 / 3) * 255)
 
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`
+}
+
+const getBoothPatternUrl = (booth) => {
+  if (booth.isEmpty) return 'none'
+  const regionDef = regionDataList.find(r => r.id === booth.region)
+  return regionDef && regionDef.patternId ? `url(#${regionDef.patternId})` : 'url(#shippou-pattern)'
 }
 
 const getBoothStyle = (booth) => {
@@ -1067,6 +1263,104 @@ const selectedBooth = computed(() => {
   return mapBoothsWithBreweryData.value.find(b => b.id === selectedBoothId.value) || null
 })
 
+const { recommendation } = useRecommendation(validBooths, boothStates, lastTappedBoothId)
+
+watch(recommendation, () => { recExpanded.value = false })
+
+watch(recExpanded, (expanded) => {
+  if (!expanded || !recommendation.value) {
+    recommendedBoothIds.value = []
+    return
+  }
+
+  const ids = []
+  const recs = [
+    recommendation.value.similarBooth,
+    recommendation.value.oppositeBooth,
+    recommendation.value.changeBooth
+  ]
+  const targetBooths = []
+  
+  for (const b of recs) {
+    if (b) {
+      ids.push(b.id)
+      targetBooths.push(b)
+    }
+  }
+  
+  recommendedBoothIds.value = ids
+  recommendBounceTrigger.value = performance.now()
+
+  if (targetBooths.length > 0) {
+    const viewport = mapViewportRef.value
+    if (!viewport) return
+
+    const targetScale = OVERVIEW_SCALE
+    const scaledWidth = mapWidth * targetScale
+    const scaledHeight = mapHeight * targetScale
+
+    let sumX = 0
+    let sumY = 0
+    for (const b of targetBooths) {
+      sumX += b.x + BOOTH_SIZE / 2
+      sumY += b.y + BOOTH_SIZE / 2
+    }
+    const centerX = (sumX / targetBooths.length) * targetScale
+    const centerY = (sumY / targetBooths.length) * targetScale
+
+    const maxScrollLeft = Math.max(0, scaledWidth - viewport.clientWidth)
+    const maxScrollTop = Math.max(0, scaledHeight - viewport.clientHeight)
+    const targetLeft = clamp(centerX - viewport.clientWidth / 2, 0, maxScrollLeft)
+
+    const estimatedPanelOverlap = estimatePanelOverlap()
+    const safeBottom = Math.max(panelOverlapPx.value, estimatedPanelOverlap) + 16
+    const topPadding = 24
+    const maxVisibleY = Math.max(topPadding + 24, viewport.clientHeight - safeBottom - 24)
+    const targetY = (topPadding + maxVisibleY) / 2
+
+    const unclampedOffset = targetY - centerY
+    let targetOffsetY = 0
+    let targetTop = 0
+
+    if (scaledHeight > viewport.clientHeight) {
+      targetTop = clamp(centerY - targetY, 0, maxScrollTop)
+      targetOffsetY = 0
+    } else {
+      const centeredOffset = (viewport.clientHeight - scaledHeight) / 2
+      const travel = Math.max(24, panelOverlapPx.value * 0.75)
+      const minOffset = centeredOffset - travel
+      const maxOffset = centeredOffset + 24
+      targetOffsetY = clamp(unclampedOffset, minOffset, maxOffset)
+      targetTop = 0
+    }
+
+    const isVisible = (b) => {
+      const bScreenY = (b.y + BOOTH_SIZE / 2) * targetScale + targetOffsetY - targetTop
+      const bScreenX = (b.x + BOOTH_SIZE / 2) * targetScale - targetLeft
+      return bScreenY >= topPadding && bScreenY <= (viewport.clientHeight - safeBottom) &&
+             bScreenX >= 0 && bScreenX <= viewport.clientWidth
+    }
+
+    const anyVisible = targetBooths.some(isVisible)
+    
+    if (!anyVisible) {
+      centerOnBooth(targetBooths[0], {
+        smooth: true,
+        targetScale: OVERVIEW_SCALE,
+        panelAware: true
+      })
+    } else {
+      animateMapState({
+        targetScale,
+        targetLeft,
+        targetTop,
+        targetOffsetY,
+        smooth: true
+      })
+    }
+  }
+})
+
 const findNearestBooth = (mapX, mapY) => {
   let nearest = null
   let minDistanceSq = Number.POSITIVE_INFINITY
@@ -1312,6 +1606,7 @@ const scheduleFocusRecalc = (smooth = false) => {
 const selectBooth = (booth) => {
   if (!booth || booth.isEmpty) return
 
+  triggerBoothTouchHighlight(booth.id)
   overviewAnchorBoothId.value = null
   const sameBooth = selectedBoothId.value === booth.id
   if (!sameBooth) {
@@ -1320,6 +1615,7 @@ const selectBooth = (booth) => {
   panelDragOffsetPx.value = 0
   panelDragState.value = null
   selectedBoothId.value = booth.id
+  lastTappedBoothId.value = booth.id
 
   if (sameBooth) {
     scheduleFocusRecalc(true)
@@ -1448,6 +1744,23 @@ const clearFavoritePulseTimer = () => {
   }
 }
 
+const clearBoothTouchHighlightTimer = () => {
+  if (boothTouchHighlightTimerId.value !== null) {
+    clearTimeout(boothTouchHighlightTimerId.value)
+    boothTouchHighlightTimerId.value = null
+  }
+}
+
+const triggerBoothTouchHighlight = (id) => {
+  clearBoothTouchHighlightTimer()
+  boothTouchHighlightId.value = id
+  boothTouchHighlightToken.value += 1
+  boothTouchHighlightTimerId.value = setTimeout(() => {
+    boothTouchHighlightId.value = null
+    boothTouchHighlightTimerId.value = null
+  }, BOOTH_TOUCH_HIGHLIGHT_MS)
+}
+
 const startFavoritePulse = (id) => {
   clearFavoritePulseTimer()
   favoritePulseBoothId.value = id
@@ -1483,6 +1796,11 @@ const toggleFavorite = (id) => {
   state.favorite = !state.favorite
   startFavoritePulse(id)
   saveBoothStates({ withHaptics: true })
+}
+
+const onMemoBlur = () => {
+  // iPhone Safari focus/scroll adjustment
+  window.scrollTo(0, window.scrollY)
 }
 
 const onMemoInput = (event) => {
@@ -1590,56 +1908,80 @@ onUnmounted(() => {
   cancelRecalcTimer()
   clearMemoSaveTimer()
   clearFavoritePulseTimer()
+  clearBoothTouchHighlightTimer()
   window.removeEventListener('resize', onResize)
 })
 </script>
 
 <style scoped>
 .app-shell {
-  /* Palette + spacing tokens */
-  --ink: #1e1e1e;
-  --ink-subtle: #6b6b6b;
-  --ink-muted: #888888;
-  --accent: #1e2a38;
-  --paper-base: #fcfaf2; /* わずかに黄みのある白（和紙の地色） */
-  --paper-elevated: #ffffff;
-  --paper-modal: #fdfcf9;
-  --line-soft: rgba(0, 0, 0, 0.08);
-  --line-faint: rgba(0, 0, 0, 0.05);
+  --ink: #2A2A2A;
+  --ink-subtle: #5C5C5C;
+  --ink-muted: #8F8F8F;
+  --accent: #1D2A4B; /* Indigo */
+  --accent-red: #9C2A31; /* Madder Red */
+  --paper-base: #FDFBEE; /* Washi Off-white */
+  --paper-elevated: #FFFFFF;
+  --paper-modal: #FAFAEA;
+  --line-soft: rgba(184, 153, 71, 0.2);
+  --line-faint: rgba(184, 153, 71, 0.1);
+  --gold-light: #E8D399;
+  --gold-mid: #B89947; /* Muted Gold */
+  --gold-dark: #8A7335;
   --space-8: 8px;
   --space-12: 12px;
   --space-16: 16px;
   --space-24: 24px;
   --safe-top: env(safe-area-inset-top, 0px);
-  --header-height: 56px;
-  --tab-height: 48px;
+  --header-height: 62px;
+  --tab-height: 50px;
   position: relative;
-  height: 100%;
-  background: var(--paper-base);
+  height: 100dvh;
   color: var(--ink);
   overflow: hidden;
-  font-family: "Yu Gothic", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-family: "Noto Sans JP", sans-serif;
 }
 
-/* 背景のベースカラーと和紙テクスチャの合成 */
 .map-container {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: var(--paper-base);
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-  background-size: 200px 200px;
-  opacity: 0.05; /* 極薄度合い */
+  background: var(--paper-base);
+}
+
+.map-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.15; /* Increased opacity for Washi texture */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+}
+
+.map-container::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0) 75%);
 }
 
 .app-header {
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 40;
-  background: rgba(245, 243, 239, 0.96);
+  background: linear-gradient(180deg, rgba(253, 251, 238, 0.98) 0%, rgba(253, 251, 238, 0.92) 100%);
   border-bottom: 1px solid var(--line-soft);
   backdrop-filter: blur(8px);
+}
+
+.app-header::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(173, 148, 97, 0.48), transparent);
 }
 
 .header-inner {
@@ -1653,17 +1995,22 @@ onUnmounted(() => {
 
 .title-block h1 {
   margin: 0;
-  font-size: 22px;
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
+  font-size: clamp(18px, 5.5vw, 28px);
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
   font-weight: 600;
   line-height: 1.2;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .title-block p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--ink-subtle);
+  margin: 4px 0 0;
+  font-size: 15px;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
+  color: var(--gold-dark);
+  letter-spacing: 0.15em;
 }
 
 .header-metrics {
@@ -1671,12 +2018,13 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .metric-row {
   display: flex;
   gap: var(--space-8);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.2;
 }
 
@@ -1695,27 +2043,60 @@ onUnmounted(() => {
   inset-inline: 0;
   height: var(--tab-height);
   z-index: 39;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  background: var(--paper-modal);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  background: rgba(248, 243, 232, 0.9);
   border-bottom: 1px solid var(--line-soft);
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-bar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .tab-btn {
+  position: relative;
   border: 0;
   margin: 0;
-  padding: 0;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 0 16px;
+  font-size: 15px;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--ink-subtle);
   background: transparent;
-  border-bottom: 3px solid transparent;
-  transition: color 0.24s ease, border-color 0.24s ease, opacity 0.24s ease;
+  transition: color 0.2s ease;
+  flex: 1 0 auto;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.tab-btn::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 2px;
+  /* Brush stroke effect */
+  background: var(--accent-red);
+  clip-path: polygon(0 40%, 100% 0, 95% 100%, 5% 80%);
+  opacity: 0;
+  transform: translateY(2px);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .tab-btn.is-active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.tab-btn.is-active::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .content-area {
@@ -1726,53 +2107,106 @@ onUnmounted(() => {
 
 .map-page {
   height: 100%;
-  padding: var(--space-16);
+  padding: 4px var(--space-16) var(--space-16);
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
+  gap: 8px;
   overflow: hidden;
-  animation: tabFadeIn 0.24s ease;
+  animation: tabFadeIn 0.3s ease;
 }
 
 .map-topbar {
   display: flex;
   flex-direction: column;
   gap: var(--space-12);
+  min-height: 84px; /* Fix height to prevent jumping */
+  justify-content: center;
 }
 
 .legend-row {
   display: flex;
   gap: var(--space-8);
-  flex-wrap: wrap;
-  animation: tabFadeIn 0.22s ease;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  animation: tabFadeIn 0.28s ease;
+  -webkit-overflow-scrolling: touch;
+}
+
+.legend-row::-webkit-scrollbar {
+  display: none;
 }
 
 .legend-chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-8);
-  background: var(--paper-elevated);
-  border: 1px solid var(--line-soft);
+  padding: 8px 14px;
   border-radius: 999px;
-  padding: 4px var(--space-12);
-  font-size: 12px;
+  border: 1px solid rgba(184, 153, 71, 0.6);
+  background: linear-gradient(180deg, rgba(253, 251, 238, 0.95) 0%, rgba(246, 240, 227, 0.95) 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.9),
+    inset 0 -2px 3px rgba(184, 153, 71, 0.25),
+    0 4px 8px rgba(42, 42, 42, 0.15);
+  font-size: 13px;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
   font-weight: 600;
   color: var(--ink);
+  letter-spacing: 0.05em;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  white-space: nowrap;
+  flex: 0 0 auto;
+  min-width: 82px;
+  justify-content: center;
+}
+
+.pattern-kaetsu {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='17.32' viewBox='0 0 30 17.32'%3E%3Cpath d='M0,8.66 L15,0 L30,8.66 L15,17.32 Z' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3Cpath d='M15,0 L15,17.32 M0,8.66 L30,8.66 M7.5,4.33 L22.5,12.99 M22.5,4.33 L7.5,12.99' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3C/svg%3E"), linear-gradient(180deg, rgba(253, 251, 238, 0.95) 0%, rgba(246, 240, 227, 0.95) 100%);
+  background-size: 20px 11.55px, 100% 100%;
+}
+
+.pattern-chuetsu {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Ccircle cx='0' cy='12' r='10' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3Ccircle cx='24' cy='12' r='10' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3Ccircle cx='12' cy='0' r='10' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3Ccircle cx='12' cy='24' r='10' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3C/svg%3E"), linear-gradient(180deg, rgba(253, 251, 238, 0.95) 0%, rgba(246, 240, 227, 0.95) 100%);
+  background-size: 16px 16px, 100% 100%;
+}
+
+.pattern-joetsu {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='34.64' viewBox='0 0 20 34.64'%3E%3Cpath d='M10,0 L20,5.77 L20,11.55 L10,17.32 L0,11.55 L0,5.77 Z' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3Cpath d='M10,17.32 L20,23.09 L20,28.87 L10,34.64 L0,28.87 L0,23.09 Z' fill='none' stroke='%23B89947' stroke-opacity='0.15' stroke-width='1.5'/%3E%3C/svg%3E"), linear-gradient(180deg, rgba(253, 251, 238, 0.95) 0%, rgba(246, 240, 227, 0.95) 100%);
+  background-size: 10px 17.32px, 100% 100%;
+}
+
+.pattern-sado {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cpath d='M0,20 A10,10 0 0,1 20,20 A10,10 0 0,1 40,20 M0,20 A6,6 0 0,1 20,20 A6,6 0 0,1 40,20' fill='none' stroke='%23B89947' stroke-opacity='0.1' stroke-width='1.5'/%3E%3Cpath d='M10,10 A10,10 0 0,1 30,10 A10,10 0 0,1 50,10 M10,10 A6,6 0 0,1 30,10 A6,6 0 0,1 50,10' fill='none' stroke='%23B89947' stroke-opacity='0.1' stroke-width='1.5'/%3E%3C/svg%3E"), linear-gradient(180deg, rgba(253, 251, 238, 0.95) 0%, rgba(246, 240, 227, 0.95) 100%);
+  background-size: 20px 10px, 100% 100%;
+}
+
+.legend-chip:active {
+  transform: translateY(2px);
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    0 1px 3px rgba(42, 42, 42, 0.1);
 }
 
 .legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  border-width: 1px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border-width: 1.5px;
+  border-color: rgba(255, 255, 255, 0.9);
   border-style: solid;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .heatmap-control-block {
   display: flex;
   flex-direction: column;
   gap: var(--space-12);
-  animation: tabFadeIn 0.22s ease;
+  animation: tabFadeIn 0.28s ease;
 }
 
 .axis-selector {
@@ -1782,20 +2216,41 @@ onUnmounted(() => {
 }
 
 .axis-btn {
-  border: 1px solid var(--line-soft);
-  background: var(--paper-elevated);
+  position: relative;
+  border: 1px solid rgba(141, 119, 80, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 245, 0.8) 0%, rgba(240, 232, 215, 0.6) 100%);
   border-radius: 999px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-subtle);
-  padding: var(--space-8) 0;
-  transition: all 0.2s ease;
+  padding: 8px 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .axis-btn.is-active {
-  color: #ffffff;
-  background: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-red);
+  font-weight: 700;
+  border-color: rgba(156, 42, 49, 0.4);
+  background: 
+    linear-gradient(180deg, rgba(253, 251, 238, 0.98) 0%, rgba(245, 235, 210, 0.95) 100%);
+  box-shadow:
+    inset 0 2px 4px rgba(156, 42, 49, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.axis-btn.is-active::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  bottom: 2px;
+  height: 2px;
+  background: var(--accent-red);
+  opacity: 0.8;
+  clip-path: polygon(0 50%, 100% 0, 95% 100%, 5% 85%);
+  animation: tabFadeIn 0.3s ease;
 }
 
 .heatmap-legend {
@@ -1805,8 +2260,8 @@ onUnmounted(() => {
 }
 
 .legend-label {
-  width: 40px;
-  font-size: 12px;
+  width: 42px;
+  font-size: 11px;
   color: var(--ink-subtle);
   font-weight: 600;
 }
@@ -1819,7 +2274,7 @@ onUnmounted(() => {
   flex: 1;
   height: 8px;
   border-radius: 999px;
-  filter: saturate(0.75);
+  filter: saturate(0.66) brightness(0.96);
 }
 
 .sweetDry-gradient {
@@ -1834,17 +2289,50 @@ onUnmounted(() => {
   background: v-bind(aromaGradient);
 }
 
-.map-viewport {
+.map-stage {
+  position: relative;
   flex: 1;
   min-height: 0;
+  border-radius: 24px;
+  border: 1px solid rgba(157, 136, 96, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 254, 0.92) 0%, rgba(250, 246, 237, 0.9) 100%);
+  box-shadow:
+    0 14px 26px rgba(70, 58, 36, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -1px 0 rgba(125, 103, 67, 0.12);
+  overflow: hidden;
+}
+
+.map-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 24px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.map-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 35%);
+}
+
+.map-viewport {
+  position: relative;
+  z-index: 1;
+  height: 100%;
   overflow-x: auto;
   overflow-y: auto;
   touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
-  border-radius: 16px;
-  border: 1px solid var(--line-soft);
-  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  background:
+    linear-gradient(180deg, rgba(254, 253, 250, 0.96) 0%, rgba(250, 247, 241, 0.94) 100%);
   scroll-behavior: auto;
   overscroll-behavior: contain;
 }
@@ -1864,42 +2352,70 @@ onUnmounted(() => {
   will-change: transform;
 }
 
+.pine-atmosphere {
+  fill: #bca885;
+  opacity: 0.12;
+}
+
 .booth-rect {
-  fill: #e5e7eb;
-  stroke: #ffffff;
-  stroke-width: 2px;
-  rx: 6px;
-  transition: fill 0.2s ease, opacity 0.2s ease;
+  fill: var(--paper-base);
+  stroke: var(--gold-dark);
+  stroke-opacity: 0.4;
+  stroke-width: 1px;
+  rx: 8px; /* Slightly rounder corners */
+  filter: drop-shadow(0 4px 6px rgba(50,40,20,0.18)) drop-shadow(0 1px 3px rgba(50,40,20,0.12));
+  transition: fill 0.2s ease, filter 0.2s ease, stroke-width 0.2s ease;
 }
 
 .booth-rect.is-empty {
   fill: transparent;
-  stroke: #d8d3ca;
+  stroke: var(--gold-light);
+  stroke-width: 1px;
   stroke-dasharray: 4;
+  filter: none;
+}
+
+.booth-pattern-overlay {
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.8;
 }
 
 .booth-gradient-overlay {
   fill: url(#booth-sheen);
   pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+.booth-touch-sheen {
+  fill: url(#booth-touch-glow);
+  opacity: 0;
+  transform-origin: center;
+  animation: boothTouchSheen 0.18s ease-out forwards;
+  pointer-events: none;
 }
 
 .booth-border-overlay {
   fill: none;
-  stroke: var(--line-faint);
-  stroke-width: 1;
+  stroke: rgba(255, 255, 255, 0.95); /* Inner white highlight border for bevel */
+  stroke-width: 1.5;
   pointer-events: none;
+  rx: 8px;
 }
 
 .booth-text {
-  font-size: 12px;
-  fill: #4d4d4d;
-  font-weight: 600;
+  font-size: 11px;
+  font-family: "Noto Sans JP", sans-serif;
+  fill: var(--ink-subtle);
+  font-weight: 500;
+  letter-spacing: 0.03em;
   pointer-events: none;
 }
 
 .booth-name-text {
   font-size: 13px;
-  fill: #1f2937;
+  font-family: "Noto Serif JP", serif; /* Modern Serif for brewery names */
+  fill: var(--ink);
   font-weight: 600;
   pointer-events: none;
 }
@@ -1913,21 +2429,21 @@ onUnmounted(() => {
 }
 
 .visited-check {
-  font-size: 13px;
-  fill: #8b4b5e;
+  font-size: 12px;
+  fill: #7d5a65;
   font-weight: 700;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity 0.16s ease;
 }
 
 .favorite-star {
-  font-size: 13px;
-  fill: #b2892b;
+  font-size: 12px;
+  fill: #94743b;
   font-weight: 700;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.18s ease;
+  transition: opacity 0.16s ease;
 }
 
 .visited-check.is-visible,
@@ -1936,7 +2452,10 @@ onUnmounted(() => {
 }
 
 .selected-highlight {
-  filter: drop-shadow(0 0 5px rgba(30, 42, 56, 0.24));
+  filter: drop-shadow(0 0 8px rgba(184, 153, 71, 0.5));
+  stroke: var(--gold-mid);
+  stroke-width: 2.5px;
+  rx: 8px;
 }
 
 .facility-layer {
@@ -1944,49 +2463,39 @@ onUnmounted(() => {
 }
 
 .facility-zone-bg {
-  fill: #e6ebf1;
-  stroke: #c4ced8;
-  stroke-width: 2;
+  fill: url(#metal-plaque);
+  stroke: #9f8558;
+  stroke-width: 1.3;
+}
+
+.facility-metal-line {
+  fill: url(#metal-line);
+  opacity: 0.9;
 }
 
 .facility-title {
-  fill: #324153;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  fill: #4F3A21;
+  font-size: 20px;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
-.facility-subtitle {
-  fill: #4b5563;
-  font-size: 14px;
-  font-weight: 600;
-}
 
-.stairs-label {
-  fill: #5b6472;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-}
-
-.stairs-step {
-  fill: #c4c6cc;
-  rx: 4;
-}
 
 .progress-page {
   height: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: var(--space-16);
-  animation: tabFadeIn 0.24s ease;
+  animation: tabFadeIn 0.3s ease;
 }
 
 .favorites-page {
   height: 100%;
   overflow: hidden;
   padding: var(--space-16);
-  animation: tabFadeIn 0.24s ease;
+  animation: tabFadeIn 0.3s ease;
 }
 
 .bottom-panel {
@@ -1997,9 +2506,13 @@ onUnmounted(() => {
   inset: auto 0 0 0;
   z-index: 50;
   transform: translate3d(0, calc(var(--panel-base-translate) + var(--panel-drag-offset)), 0);
-  background: var(--paper-modal);
+  background:
+    linear-gradient(180deg, rgba(253, 251, 238, 0.98) 0%, rgba(246, 240, 227, 0.98) 100%);
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+  border-top: 1px solid rgba(184, 153, 71, 0.4);
+  box-shadow:
+    0 -8px 28px rgba(42, 42, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   padding: 10px var(--space-16) calc(var(--space-16) + env(safe-area-inset-bottom, 0px));
   max-height: min(40dvh, 300px);
   overflow-y: auto;
@@ -2015,11 +2528,11 @@ onUnmounted(() => {
 }
 
 .panel-handle {
-  width: 40px;
+  width: 42px;
   height: 4px;
   border-radius: 999px;
   margin: 0 auto 10px;
-  background: rgba(30, 42, 56, 0.24);
+  background: rgba(123, 99, 60, 0.34);
   cursor: grab;
   touch-action: none;
 }
@@ -2043,11 +2556,12 @@ onUnmounted(() => {
 
 .panel-header h2 {
   margin: 0;
-  font-size: 18px;
-  font-family: "Yu Mincho", "Hiragino Mincho ProN", "Noto Serif JP", serif;
-  font-weight: 600;
-  line-height: 1.25;
+  font-size: 20px;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
+  font-weight: 700;
+  line-height: 1.3;
   color: var(--ink);
+  letter-spacing: 0.05em;
 }
 
 .booth-id-badge {
@@ -2059,10 +2573,10 @@ onUnmounted(() => {
 .close-btn {
   width: 30px;
   height: 30px;
-  border: 0;
+  border: 1px solid rgba(137, 115, 78, 0.26);
   border-radius: 999px;
-  background: rgba(30, 42, 56, 0.08);
-  color: #51606f;
+  background: linear-gradient(180deg, #fffdfa, #efe5d1);
+  color: #7e6846;
   font-size: 1.08rem;
   line-height: 1;
 }
@@ -2121,8 +2635,8 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   border-radius: 6px;
-  opacity: 0.78;
-  filter: saturate(0.72);
+  opacity: 0.72;
+  filter: saturate(0.62) brightness(0.94);
 }
 
 .sweet-dry-bg {
@@ -2144,7 +2658,7 @@ onUnmounted(() => {
   bottom: -1px;
   width: 2px;
   background: var(--accent);
-  opacity: 0.3;
+  opacity: 0.32;
   z-index: 1;
 }
 
@@ -2153,9 +2667,9 @@ onUnmounted(() => {
   top: 50%;
   width: 14px;
   height: 14px;
-  background: #ffffff;
-  border: 2px solid var(--accent);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  background: #fffdf9;
+  border: 1px solid rgba(132, 106, 62, 0.72);
+  box-shadow: 0 2px 5px rgba(70, 54, 29, 0.22);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
@@ -2176,7 +2690,7 @@ onUnmounted(() => {
 .brewery-extra {
   padding-top: 10px;
   border-top: 1px solid var(--line-soft);
-  animation: tabFadeIn 0.2s ease;
+  animation: tabFadeIn 0.18s ease;
 }
 
 .extra-list {
@@ -2202,13 +2716,13 @@ onUnmounted(() => {
 .extra-item dd {
   margin: 0;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--ink);
   word-break: break-word;
 }
 
 .extra-link {
-  color: var(--accent);
+  color: #5f4d30;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -2226,33 +2740,33 @@ onUnmounted(() => {
   display: none;
 }
 
-/* Toggle-like checkbox */
 .checkbox-custom {
   width: 44px;
   height: 26px;
-  border: 1px solid rgba(30, 42, 56, 0.22);
+  border: 1px solid rgba(118, 95, 60, 0.3);
   border-radius: 999px;
   position: relative;
-  background: rgba(30, 42, 56, 0.12);
-  transition: all 0.24s ease;
+  background: rgba(110, 90, 58, 0.12);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.56);
+  transition: all 0.18s ease;
 }
 
 .checkbox-custom::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 2px;
   left: 2px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.16);
-  transition: transform 0.24s ease;
+  background: #fffdfa;
+  box-shadow: 0 1px 3px rgba(54, 40, 19, 0.2);
+  transition: transform 0.18s ease;
 }
 
 .visited-checkbox-label input:checked + .checkbox-custom {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: linear-gradient(180deg, #b59a67, #8d7448);
+  border-color: rgba(110, 84, 44, 0.58);
 }
 
 .visited-checkbox-label input:checked + .checkbox-custom::after {
@@ -2260,14 +2774,14 @@ onUnmounted(() => {
 }
 
 .visited-checkbox-label input:focus-visible + .checkbox-custom {
-  outline: 2px solid rgba(30, 42, 56, 0.42);
+  outline: 2px solid rgba(110, 88, 49, 0.36);
   outline-offset: 2px;
 }
 
 .favorite-toggle-btn {
-  border: 1px solid rgba(30, 42, 56, 0.18);
-  background: #ffffff;
-  color: #556170;
+  border: 1px solid rgba(132, 109, 71, 0.34);
+  background: linear-gradient(180deg, #fffdf9, #ece2ce);
+  color: #5d4a2c;
   border-radius: 999px;
   padding: 7px 12px;
   font-size: 13px;
@@ -2275,17 +2789,20 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .favorite-toggle-btn.is-active {
-  color: #7a5a12;
-  border-color: rgba(178, 137, 43, 0.46);
-  background: #fff7df;
+  color: #5a451f;
+  border-color: rgba(145, 120, 72, 0.52);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 251, 240, 0.9),
+    inset 0 -1px 0 rgba(148, 124, 77, 0.22);
 }
 
 .favorite-toggle-btn.is-pulsing {
-  animation: favoritePulse 0.26s ease;
+  animation: favoritePulse 0.24s ease;
 }
 
 .favorite-icon {
@@ -2311,18 +2828,18 @@ onUnmounted(() => {
   width: 100%;
   min-height: 88px;
   max-height: 150px;
-  border: 1px solid rgba(30, 42, 56, 0.16);
+  border: 1px solid rgba(126, 105, 69, 0.22);
   border-radius: 10px;
-  background: #ffffff;
+  background: #fffdf8;
   color: var(--ink);
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.45;
   resize: vertical;
 }
 
 .memo-textarea:focus-visible {
-  outline: 2px solid rgba(30, 42, 56, 0.28);
+  outline: 2px solid rgba(112, 90, 49, 0.24);
   outline-offset: 1px;
 }
 
@@ -2335,13 +2852,27 @@ onUnmounted(() => {
 
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
 }
 
 .panel-slide-enter-from,
 .panel-slide-leave-to {
-  --panel-base-translate: 24px;
+  --panel-base-translate: 18px;
   opacity: 0;
+}
+
+@keyframes boothTouchSheen {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  36% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
 }
 
 @keyframes tabFadeIn {
@@ -2355,13 +2886,27 @@ onUnmounted(() => {
 
 @keyframes favoritePulse {
   0% {
-    transform: scale(0.9);
+    transform: scale(0.96);
   }
   55% {
-    transform: scale(1.1);
+    transform: scale(1.04);
   }
   100% {
     transform: scale(1);
+  }
+}
+
+@media (max-width: 420px) {
+  .title-block h1 {
+    font-size: 28px;
+  }
+
+  .title-block p {
+    font-size: 15px;
+  }
+
+  .tab-btn {
+    font-size: 16px;
   }
 }
 
@@ -2372,9 +2917,202 @@ onUnmounted(() => {
   .legend-row,
   .heatmap-control-block,
   .panel-slide-enter-active,
-  .panel-slide-leave-active {
+  .panel-slide-leave-active,
+  .booth-touch-sheen {
     transition: none;
     animation: none;
   }
+}
+
+/* ── レコメンドハイライト ── */
+.recommend-highlight-group {
+  opacity: 0;
+  transition: opacity 0.6s ease-in-out;
+  pointer-events: none;
+}
+
+.recommend-highlight-group.is-recommended {
+  opacity: 1;
+}
+
+.recommend-highlight-group.is-flickering {
+  animation: recommend-flicker 2.5s ease-in-out infinite;
+}
+
+@keyframes recommend-flicker {
+  0%, 100% { opacity: 1; }
+  30% { opacity: 0.7; }
+  50% { opacity: 0.95; }
+  70% { opacity: 0.6; }
+  85% { opacity: 0.9; }
+}
+
+/* ── レコメンドカード ── */
+.recommendation-card {
+  margin: 12px 12px 8px;
+  padding: 14px 16px 10px;
+  background: linear-gradient(135deg, rgba(253, 251, 238, 0.95), rgba(250, 246, 230, 0.92));
+  border: 1px solid rgba(184, 153, 71, 0.28);
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(140, 110, 50, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.recommendation-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(184, 153, 71, 0.35), transparent);
+}
+
+/* ── フッターメッセージ ── */
+.footer-message-card {
+  padding: 18px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.static-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.message-intro {
+  margin: 0;
+  font-size: 13.5px;
+  color: #B89947;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.message-text {
+  margin: 0;
+  font-size: 13px;
+  color: #5C4A2A;
+  line-height: 1.6;
+}
+
+.rec-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(184, 153, 71, 0.15);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rec-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.rec-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #5C4A2A;
+  letter-spacing: 0.04em;
+  flex: 1;
+}
+
+.rec-toggle-icon {
+  font-size: 11px;
+  color: #B89947;
+  margin-left: auto;
+}
+
+/* ── コンパクト表示（サマリー） ── */
+.rec-summary {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rec-summary-line {
+  margin: 2px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #3A3A3A;
+}
+
+.rec-summary-label {
+  font-weight: 600;
+  color: #5C4A2A;
+  font-size: 11.5px;
+}
+
+.rec-expand-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #B89947;
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+
+/* ── 展開表示（詳細） ── */
+.rec-body {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #3A3A3A;
+}
+
+.rec-visit-intro {
+  margin: 0 0 4px;
+  font-size: 11.5px;
+  color: #8F8F8F;
+  font-style: italic;
+}
+
+.rec-line {
+  margin: 3px 0;
+}
+
+.rec-bullet {
+  color: #B89947;
+  font-weight: 600;
+}
+
+.rec-indent {
+  padding-left: 14px;
+  display: inline-block;
+}
+
+.rec-footer {
+  margin: 8px 0 0;
+  font-size: 10px;
+  color: #B0A88A;
+  text-align: right;
+}
+
+.rec-collapse-hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #B89947;
+  text-align: center;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rec-fade-enter-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.rec-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.rec-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.rec-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 </style>

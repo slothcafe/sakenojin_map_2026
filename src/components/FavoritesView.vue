@@ -76,9 +76,12 @@ const resolveRegionStyle = (regionId) => {
 }
 
 .favorite-item {
-  border: 1px solid var(--line-soft);
+  border: 1px solid rgba(184, 153, 71, 0.3);
   border-radius: 14px;
-  background: var(--paper-elevated);
+  background: linear-gradient(180deg, rgba(253, 251, 238, 0.98) 0%, rgba(246, 240, 227, 0.98) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 10px rgba(42, 42, 42, 0.05);
 }
 
 .favorite-row {
@@ -102,14 +105,17 @@ const resolveRegionStyle = (regionId) => {
 .booth-line {
   margin: 0 0 4px;
   font-size: 12px;
-  color: var(--ink-subtle);
+  color: var(--ink-muted);
   font-weight: 600;
 }
 
 .brewery-name {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ink);
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   line-height: 1.35;
 }
 
@@ -125,25 +131,28 @@ const resolveRegionStyle = (regionId) => {
   font-size: 11px;
   font-weight: 700;
   border-radius: 999px;
-  padding: 3px 9px;
+  padding: 3px 10px;
   white-space: nowrap;
 }
 
 .region-chip {
-  border: 1px solid transparent;
-  color: #293241;
+  border: 1px solid rgba(184, 153, 71, 0.4);
+  color: var(--ink);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(184, 153, 71, 0.2);
 }
 
 .visit-chip {
-  border: 1px solid rgba(30, 42, 56, 0.2);
-  color: #5f6b77;
-  background: #f6f4f0;
+  border: 1px solid rgba(130, 108, 70, 0.25);
+  color: #6d6252;
+  background: #f5f0e5;
 }
 
 .visit-chip.is-visited {
-  color: #ffffff;
-  border-color: #1e2a38;
-  background: #1e2a38;
+  color: var(--ink);
+  border-color: rgba(184, 153, 71, 0.6);
+  background: linear-gradient(180deg, #E8D399, #B89947);
 }
 
 .empty-state {
@@ -160,9 +169,11 @@ const resolveRegionStyle = (regionId) => {
 
 .empty-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   color: var(--ink);
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
   font-weight: 700;
+  letter-spacing: 0.05em;
 }
 
 .empty-desc {

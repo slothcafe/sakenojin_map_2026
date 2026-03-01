@@ -10,14 +10,14 @@
           <circle
             cx="60" cy="60" :r="radius"
             fill="none"
-            stroke="#e5e7eb"
+            stroke="#e2d8c6"
             stroke-width="10"
           />
           <!-- プログレスリング -->
           <circle
             cx="60" cy="60" :r="radius"
             fill="none"
-            stroke="#1E2A38"
+            stroke="#7a6643"
             stroke-width="10"
             stroke-linecap="round"
             :stroke-dasharray="circumference"
@@ -50,7 +50,7 @@
             <path
               d="M 155,10 L 230,20 L 240,60 L 210,90 L 190,120 L 155,125 L 140,100 L 145,50 Z"
               :fill="regionFill('下越')"
-              stroke="#94a3b8"
+              stroke="#9d8a6a"
               stroke-width="1.5"
               class="map-region"
             />
@@ -65,7 +65,7 @@
             <path
               d="M 30,30 L 100,18 L 115,55 L 80,75 L 40,65 Z"
               :fill="regionFill('佐渡')"
-              stroke="#94a3b8"
+              stroke="#9d8a6a"
               stroke-width="1.5"
               class="map-region"
             />
@@ -80,7 +80,7 @@
             <path
               d="M 140,100 L 155,125 L 190,120 L 210,90 L 220,140 L 210,185 L 175,195 L 145,190 L 125,165 L 115,135 Z"
               :fill="regionFill('中越')"
-              stroke="#94a3b8"
+              stroke="#9d8a6a"
               stroke-width="1.5"
               class="map-region"
             />
@@ -95,7 +95,7 @@
             <path
               d="M 115,135 L 125,165 L 145,190 L 175,195 L 180,230 L 155,270 L 120,290 L 90,280 L 70,250 L 75,210 L 95,185 L 100,155 Z"
               :fill="regionFill('上越')"
-              stroke="#94a3b8"
+              stroke="#9d8a6a"
               stroke-width="1.5"
               class="map-region"
             />
@@ -179,19 +179,25 @@ const strokeDashoffset = computed(() => {
 // --- マップ塗り分け ---
 const regionFill = (region) => {
   const pct = regionStats.value[region]?.percentage ?? 0
-  // 0% -> alpha=0.15, 100% -> alpha=1.0
-  const alpha = 0.15 + (pct / 100) * 0.85
-  return `rgba(37, 99, 235, ${alpha.toFixed(2)})`
+  const toneMap = {
+    下越: [165, 120, 128],
+    中越: [126, 145, 111],
+    上越: [114, 123, 145],
+    佐渡: [167, 141, 82]
+  }
+  const [r, g, b] = toneMap[region] || [142, 127, 101]
+  const alpha = 0.2 + (pct / 100) * 0.6
+  return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`
 }
 </script>
 
 <style scoped>
 .progress-view {
-  --ink: #1e1e1e;
-  --ink-subtle: #6b6b6b;
-  --accent: #1e2a38;
-  --line-soft: rgba(0, 0, 0, 0.08);
-  --line-faint: rgba(0, 0, 0, 0.05);
+  --ink: #2A2A2A;
+  --ink-subtle: #5C5C5C;
+  --accent: #1D2A4B;
+  --line-soft: rgba(184, 153, 71, 0.2);
+  --line-faint: rgba(184, 153, 71, 0.1);
   --space-8: 8px;
   --space-12: 12px;
   --space-16: 16px;
@@ -211,10 +217,12 @@ const regionFill = (region) => {
 .section {
   width: 100%;
   padding: var(--space-24) var(--space-16);
-  background: #ffffff;
-  border: 1px solid var(--line-faint);
+  background: linear-gradient(180deg, rgba(253, 251, 238, 0.98) 0%, rgba(246, 240, 227, 0.98) 100%);
+  border: 1px solid var(--line-soft);
   border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  box-shadow:
+    0 6px 14px rgba(42, 42, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   box-sizing: border-box;
 }
 
@@ -223,10 +231,11 @@ const regionFill = (region) => {
 }
 
 .section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink-subtle);
-  letter-spacing: 0.04em;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
   margin: 0 0 var(--space-16);
 }
 
@@ -247,9 +256,10 @@ const regionFill = (region) => {
 }
 
 .circle-label-count {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   fill: var(--ink);
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
 }
 
 .circle-label-pct {
@@ -276,24 +286,25 @@ const regionFill = (region) => {
 
 .map-region {
   cursor: pointer;
-  transition: opacity 0.2s ease;
-  filter: saturate(0.72);
+  transition: opacity 0.18s ease;
+  filter: saturate(0.68);
 }
 .map-region:hover {
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 .map-label {
   font-size: 13px;
   font-weight: 600;
-  fill: #1f1f1f;
+  fill: var(--ink);
+  font-family: "Noto Sans JP", sans-serif;
   pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
 .map-stat {
   font-size: 11px;
-  fill: rgba(0, 0, 0, 0.72);
+  fill: rgba(51, 41, 25, 0.78);
   pointer-events: none;
 }
 
@@ -316,7 +327,7 @@ const regionFill = (region) => {
   padding: var(--space-12);
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: #fffdf9;
+  background: rgba(255, 250, 243, 0.72);
 }
 
 .dashboard-row-top {
@@ -330,6 +341,7 @@ const regionFill = (region) => {
   font-weight: 600;
   color: var(--ink);
   min-width: 3em;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
 }
 
 .region-count {
@@ -348,14 +360,14 @@ const regionFill = (region) => {
 .bar-bg {
   width: 100%;
   height: 8px;
-  background: #e8e5df;
+  background: #e6dcc8;
   border-radius: 9999px;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(180deg, #33485f, #1e2a38);
+  background: linear-gradient(180deg, #B89947, #8A7335);
   border-radius: 9999px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -367,12 +379,14 @@ const regionFill = (region) => {
 
 .reset-history-btn {
   width: 100%;
-  border: 1px solid rgba(30, 42, 56, 0.25);
-  background: #ffffff;
-  color: var(--accent);
+  border: 1px solid rgba(184, 153, 71, 0.4);
+  background: linear-gradient(180deg, #FDFBEE, #FAFAEA);
+  color: #8A7335;
   border-radius: 999px;
   font-size: 14px;
+  font-family: "Noto Sans JP", sans-serif;
   font-weight: 600;
   padding: var(--space-12) var(--space-16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 </style>
