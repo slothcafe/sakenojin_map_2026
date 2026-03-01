@@ -33,7 +33,7 @@
         :class="{ 'is-active': currentView === 'heatmap' }"
         @click="currentView = 'heatmap'"
       >
-        味わい傾向
+        味わいナビ
       </button>
       <button
         class="tab-btn"

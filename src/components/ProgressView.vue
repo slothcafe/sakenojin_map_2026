@@ -45,63 +45,21 @@
           class="niigata-map"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <!-- 下越（右上寄り・北東） -->
-          <g @click="$emit('regionClick', '下越')">
+          <g 
+            v-for="(regionData, regionName) in regionPaths" 
+            :key="regionName"
+            @click="$emit('regionClick', regionName)"
+          >
             <path
-              d="M 155,10 L 230,20 L 240,60 L 210,90 L 190,120 L 155,125 L 140,100 L 145,50 Z"
-              :fill="regionFill('下越')"
+              :d="regionData.path"
+              :fill="regionFill(regionName)"
               stroke="#9d8a6a"
               stroke-width="1.5"
               class="map-region"
             />
-            <text x="190" y="72" text-anchor="middle" class="map-label">下越</text>
-            <text x="190" y="90" text-anchor="middle" class="map-stat">
-              {{ regionStats['下越'].visited }}/{{ regionStats['下越'].total }}
-            </text>
-          </g>
-
-          <!-- 佐渡（左上・離島） -->
-          <g @click="$emit('regionClick', '佐渡')">
-            <path
-              d="M 30,30 L 100,18 L 115,55 L 80,75 L 40,65 Z"
-              :fill="regionFill('佐渡')"
-              stroke="#9d8a6a"
-              stroke-width="1.5"
-              class="map-region"
-            />
-            <text x="73" y="50" text-anchor="middle" class="map-label">佐渡</text>
-            <text x="73" y="66" text-anchor="middle" class="map-stat">
-              {{ regionStats['佐渡'].visited }}/{{ regionStats['佐渡'].total }}
-            </text>
-          </g>
-
-          <!-- 中越（中央） -->
-          <g @click="$emit('regionClick', '中越')">
-            <path
-              d="M 140,100 L 155,125 L 190,120 L 210,90 L 220,140 L 210,185 L 175,195 L 145,190 L 125,165 L 115,135 Z"
-              :fill="regionFill('中越')"
-              stroke="#9d8a6a"
-              stroke-width="1.5"
-              class="map-region"
-            />
-            <text x="170" y="155" text-anchor="middle" class="map-label">中越</text>
-            <text x="170" y="173" text-anchor="middle" class="map-stat">
-              {{ regionStats['中越'].visited }}/{{ regionStats['中越'].total }}
-            </text>
-          </g>
-
-          <!-- 上越（南西・下部） -->
-          <g @click="$emit('regionClick', '上越')">
-            <path
-              d="M 115,135 L 125,165 L 145,190 L 175,195 L 180,230 L 155,270 L 120,290 L 90,280 L 70,250 L 75,210 L 95,185 L 100,155 Z"
-              :fill="regionFill('上越')"
-              stroke="#9d8a6a"
-              stroke-width="1.5"
-              class="map-region"
-            />
-            <text x="128" y="235" text-anchor="middle" class="map-label">上越</text>
-            <text x="128" y="253" text-anchor="middle" class="map-stat">
-              {{ regionStats['上越'].visited }}/{{ regionStats['上越'].total }}
+            <text :x="getLabelPos(regionName).x" :y="getLabelPos(regionName).y" text-anchor="middle" class="map-label">{{ regionName }}</text>
+            <text :x="getLabelPos(regionName).x" :y="getLabelPos(regionName).y + 18" text-anchor="middle" class="map-stat">
+              {{ regionStats[regionName]?.visited || 0 }}/{{ regionStats[regionName]?.total || 0 }}
             </text>
           </g>
         </svg>
@@ -146,6 +104,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useProgressStats, REGIONS } from '../composables/useProgressStats'
+import regionPaths from '../assets/niigata_region_paths.json'
 
 const props = defineProps({
   breweries: {
@@ -165,6 +124,17 @@ const { regionStats, totalCount, totalVisited, totalPercentage } = useProgressSt
   computed(() => props.breweries),
   computed(() => props.visitRecords)
 )
+
+const labelPositions = {
+  '下越': { x: 230, y: 120 },
+  '中越': { x: 160, y: 220 },
+  '上越': { x: 70, y: 255 },
+  '佐渡': { x: 105, y: 95 }
+}
+
+const getLabelPos = (regionName) => {
+  return labelPositions[regionName] || { x: regionPaths[regionName]?.center[0] || 150, y: (regionPaths[regionName]?.center[1] || 150) - 10 }
+}
 
 // --- 円形プログレスバー ---
 const circleSize = 160
