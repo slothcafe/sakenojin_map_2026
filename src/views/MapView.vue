@@ -13,7 +13,7 @@
             <span class="metric-value">{{ visitedBreweryIds.length }} / {{ breweries.size }}</span>
           </div>
           <div class="metric-row">
-            <span class="metric-label">進捗</span>
+            <span class="metric-label">訪問率</span>
             <span class="metric-value">{{ progressPercent }}%</span>
           </div>
         </div>
@@ -47,7 +47,7 @@
         :class="{ 'is-active': currentView === 'progress' }"
         @click="currentView = 'progress'"
       >
-        進捗
+        巡歴
       </button>
     </nav>
 
@@ -437,6 +437,8 @@
         <ProgressView
           :breweries="breweries"
           :visitRecords="visitRecords"
+          :visitedHistoryRecords="visitedHistoryRecords"
+          :breweryCoordinates="breweryCoordinates"
           @resetVisited="resetVisited"
         />
       </main>
@@ -508,6 +510,7 @@
               <span class="bar-limit-label max">華</span>
               <span class="taste-current-label">{{ getAromaLabel(selectedBooth.estimated.aroma) }}</span>
             </div>
+            <div class="taste-disclaimer">※味わい傾向は独自AIによる分析をもとにした参考表示です</div>
           </div>
 
           <div v-if="panelVisualExpanded" class="brewery-extra">
@@ -521,7 +524,7 @@
                 <dd>{{ selectedBooth.brand || '情報なし' }}</dd>
               </div>
               <div class="extra-item">
-                <dt>サマリー</dt>
+                <dt>酒造紹介</dt>
                 <dd>{{ selectedBooth.summary || '情報なし' }}</dd>
               </div>
               <div class="extra-item">
@@ -624,6 +627,8 @@ const MEMO_MAX_LENGTH = 200
 const MEMO_SAVE_DEBOUNCE_MS = 500
 const FAVORITE_PULSE_MS = 260
 const BOOTH_TOUCH_HIGHLIGHT_MS = 180
+const VISITED_BREWERIES_KEY = 'visitedBreweries'
+const REGION_NAME_SET = new Set(['上越', '中越', '下越', '佐渡'])
 
 const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
 const boothAreaHeight = BLOCKS_Y * (INNER_ROWS * BOOTH_SIZE) + (BLOCKS_Y - 1) * BLOCK_GAP_Y
@@ -680,6 +685,7 @@ const mapRecalcTimerId = ref(null)
 const brewerySource = ref([])
 const breweryScoresData = ref([])
 const breweryFlavorData = ref([])
+const visitedHistoryMap = ref({})
 
 const flavorAxes = {
   sweetDry: {
@@ -717,6 +723,24 @@ const favoriteBoothIdSet = computed(() => {
   return ids
 })
 const visitedBreweryIds = computed(() => Array.from(visitedBoothIdSet.value))
+const visitedHistoryRecords = computed(() =>
+  Object.values(visitedHistoryMap.value).sort((a, b) =>
+    new Date(a.visitedAt).getTime() - new Date(b.visitedAt).getTime()
+  )
+)
+const breweryCoordinates = computed(() => {
+  const coordinates = {}
+
+  validBooths.value.forEach((booth) => {
+    if (booth.isEmpty) return
+    coordinates[booth.id] = {
+      x: booth.x + BOOTH_SIZE / 2,
+      y: booth.y + BOOTH_SIZE / 2
+    }
+  })
+
+  return coordinates
+})
 
 const footerMessageState = computed(() => {
   const total = validBooths.value.filter(b => !b.isEmpty).length
@@ -1141,12 +1165,19 @@ const normalizeStateMap = (parsed) => {
 const buildLegacyStateMap = () => {
   const visitedIds = new Set()
 
-  const visitedBreweries = localStorage.getItem('visitedBreweries')
+  const visitedBreweries = localStorage.getItem(VISITED_BREWERIES_KEY)
   if (visitedBreweries) {
     try {
       const parsed = JSON.parse(visitedBreweries)
       if (Array.isArray(parsed)) {
-        parsed.forEach(id => visitedIds.add(String(id)))
+        parsed.forEach((entry) => {
+          if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+            const legacyId = entry.breweryId ?? entry.id
+            if (legacyId != null) visitedIds.add(String(legacyId))
+            return
+          }
+          if (entry != null) visitedIds.add(String(entry))
+        })
       }
     } catch {
       // noop
@@ -1179,6 +1210,165 @@ const buildLegacyStateMap = () => {
     }
   })
   return legacy
+}
+
+const normalizeVisitedHistoryRecords = (parsed) => {
+  const normalized = {}
+  let shouldRewrite = false
+
+  if (!Array.isArray(parsed)) {
+    return { normalized, shouldRewrite: true }
+  }
+
+  parsed.forEach((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      shouldRewrite = true
+      return
+    }
+
+    const breweryIdRaw = entry.breweryId ?? entry.id
+    if (breweryIdRaw == null) {
+      shouldRewrite = true
+      return
+    }
+
+    const breweryId = String(breweryIdRaw)
+    const brew = breweries.value.get(breweryId)
+    const name = typeof entry.breweryName === 'string' && entry.breweryName
+      ? entry.breweryName
+      : (brew?.name || `不明 ${breweryId}`)
+    const region = REGION_NAME_SET.has(entry.region)
+      ? entry.region
+      : (REGION_NAME_SET.has(brew?.regionName) ? brew.regionName : null)
+
+    if (!region) {
+      shouldRewrite = true
+      return
+    }
+
+    const time = new Date(entry.visitedAt)
+    const hasValidTimestamp = !Number.isNaN(time.getTime())
+    const visitedAt = hasValidTimestamp ? time.toISOString() : new Date().toISOString()
+    if (!hasValidTimestamp) {
+      shouldRewrite = true
+    }
+
+    normalized[breweryId] = {
+      breweryId,
+      breweryName: name,
+      region,
+      visitedAt
+    }
+  })
+
+  if (Object.keys(normalized).length !== parsed.length) {
+    shouldRewrite = true
+  }
+
+  return { normalized, shouldRewrite }
+}
+
+const saveVisitedHistory = () => {
+  const records = Object.values(visitedHistoryMap.value).sort((a, b) =>
+    new Date(a.visitedAt).getTime() - new Date(b.visitedAt).getTime()
+  )
+  localStorage.setItem(VISITED_BREWERIES_KEY, JSON.stringify(records))
+}
+
+const loadVisitedHistory = () => {
+  const raw = localStorage.getItem(VISITED_BREWERIES_KEY)
+  if (!raw) {
+    visitedHistoryMap.value = {}
+    return false
+  }
+
+  try {
+    const parsed = JSON.parse(raw)
+    const { normalized, shouldRewrite } = normalizeVisitedHistoryRecords(parsed)
+    visitedHistoryMap.value = normalized
+    return shouldRewrite
+  } catch {
+    visitedHistoryMap.value = {}
+    return true
+  }
+}
+
+const syncVisitedHistoryWithState = () => {
+  const next = {}
+  let changed = false
+
+  for (const [id, state] of Object.entries(boothStates.value)) {
+    if (!state?.visited) continue
+
+    const brewery = breweries.value.get(id)
+    if (!brewery) continue
+    if (!REGION_NAME_SET.has(brewery.regionName)) continue
+
+    const existing = visitedHistoryMap.value[id]
+    const visitedAt = existing?.visitedAt || new Date().toISOString()
+    const record = {
+      breweryId: id,
+      breweryName: brewery.name || existing?.breweryName || `不明 ${id}`,
+      region: brewery.regionName,
+      visitedAt
+    }
+
+    next[id] = record
+
+    if (
+      !existing ||
+      existing.breweryName !== record.breweryName ||
+      existing.region !== record.region ||
+      existing.visitedAt !== record.visitedAt
+    ) {
+      changed = true
+    }
+  }
+
+  if (!changed) {
+    const currentKeys = Object.keys(visitedHistoryMap.value)
+    const nextKeys = Object.keys(next)
+    if (currentKeys.length !== nextKeys.length) {
+      changed = true
+    } else {
+      for (const key of nextKeys) {
+        if (!visitedHistoryMap.value[key]) {
+          changed = true
+          break
+        }
+      }
+    }
+  }
+
+  visitedHistoryMap.value = next
+  return changed
+}
+
+const setVisitedHistoryForBooth = (id) => {
+  const key = String(id)
+  const brewery = breweries.value.get(key)
+  if (!brewery || !REGION_NAME_SET.has(brewery.regionName)) return
+
+  const existing = visitedHistoryMap.value[key]
+  const next = {
+    ...visitedHistoryMap.value,
+    [key]: {
+      breweryId: key,
+      breweryName: brewery.name || existing?.breweryName || `不明 ${key}`,
+      region: brewery.regionName,
+      visitedAt: existing?.visitedAt || new Date().toISOString()
+    }
+  }
+  visitedHistoryMap.value = next
+}
+
+const removeVisitedHistoryForBooth = (id) => {
+  const key = String(id)
+  if (!visitedHistoryMap.value[key]) return
+
+  const next = { ...visitedHistoryMap.value }
+  delete next[key]
+  visitedHistoryMap.value = next
 }
 
 const triggerLightHaptic = () => {
@@ -1222,8 +1412,13 @@ const loadBoothStates = () => {
   if (ensureAllBoothStates()) {
     shouldRewrite = true
   }
+  const shouldRewriteHistory = loadVisitedHistory()
+  const syncedHistory = syncVisitedHistoryWithState()
   if (shouldRewrite) {
     saveBoothStates()
+  }
+  if (shouldRewriteHistory || syncedHistory) {
+    saveVisitedHistory()
   }
 }
 
@@ -1795,8 +1990,15 @@ const scheduleMemoSave = () => {
 
 const toggleVisited = (id) => {
   const state = ensureBoothState(id)
-  state.visited = !state.visited
+  const nextVisited = !state.visited
+  state.visited = nextVisited
+  if (nextVisited) {
+    setVisitedHistoryForBooth(id)
+  } else {
+    removeVisitedHistoryForBooth(id)
+  }
   saveBoothStates({ withHaptics: true })
+  saveVisitedHistory()
 }
 
 const toggleFavorite = (id) => {
@@ -1858,7 +2060,9 @@ const resetVisited = () => {
     Object.values(boothStates.value).forEach((state) => {
       state.visited = false
     })
+    visitedHistoryMap.value = {}
     saveBoothStates({ withHaptics: true })
+    saveVisitedHistory()
     overviewAnchorBoothId.value = null
     selectedBoothId.value = null
   }
@@ -2622,6 +2826,14 @@ onUnmounted(() => {
   font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
+  text-align: right;
+}
+
+.taste-disclaimer {
+  font-size: 11px;
+  color: #8c8679;
+  line-height: 1.6;
+  margin-top: 6px;
   text-align: right;
 }
 

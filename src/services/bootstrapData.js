@@ -43,10 +43,6 @@ export const loadBreweryData = async () => {
   }
 }
 
-export const loadMapData = async () => {
-  const mapModule = await import('../../niigata_region_map.json')
-  return mapModule.default ?? null
-}
 
 export const primeBootstrapData = (data) => {
   cachedBootstrapData = data
@@ -62,11 +58,10 @@ export const loadBootstrapData = () => {
     return cachedBootstrapPromise
   }
 
-  cachedBootstrapPromise = Promise.all([loadBreweryData(), loadMapData(), loadHistoryData()])
-    .then(([breweryData, mapData, historyData]) => {
+  cachedBootstrapPromise = Promise.all([loadBreweryData(), loadHistoryData()])
+    .then(([breweryData, historyData]) => {
       cachedBootstrapData = {
         ...breweryData,
-        mapData,
         historyData
       }
       return cachedBootstrapData

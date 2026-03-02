@@ -18,7 +18,6 @@ import AppLogo from '../components/AppLogo.vue'
 import {
   loadBreweryData,
   loadHistoryData,
-  loadMapData,
   primeBootstrapData
 } from '../services/bootstrapData.js'
 
@@ -45,10 +44,9 @@ const wait = (ms) => new Promise((resolve) => {
 onMounted(async () => {
   try {
     const [loadedData] = await Promise.all([
-      Promise.all([loadBreweryData(), loadMapData(), loadHistoryData()]).then(
-        ([breweryData, mapData, historyData]) => ({
+      Promise.all([loadBreweryData(), loadHistoryData()]).then(
+        ([breweryData, historyData]) => ({
           ...breweryData,
-          mapData,
           historyData
         })
       ),
