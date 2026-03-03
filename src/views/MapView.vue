@@ -364,6 +364,17 @@
           </div>
         </div>
 
+        <transition name="pwa-fade">
+          <PwaInstallCard
+            v-if="!isZoomed && showPwaInstallCard"
+            :top-text="pwaCardTopText"
+            :bottom-text="pwaCardBottomText"
+            :action-label="pwaCardActionLabel"
+            @dismiss="dismissPwaInstallCard"
+            @showGuide="openPwaInstallGuide"
+          />
+        </transition>
+
         <!-- ボトムカードエリア -->
         <transition name="rec-fade" mode="out-in">
           <!-- レコメンドカード -->
@@ -443,6 +454,11 @@
         />
       </main>
     </section>
+
+    <PwaInstallGuideModal
+      v-model="showPwaGuideModal"
+      :steps="pwaGuideSteps"
+    />
 
     <transition name="panel-slide">
       <div
@@ -592,6 +608,8 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import ProgressView from '../components/ProgressView.vue'
 import FavoritesView from '../components/FavoritesView.vue'
+import PwaInstallCard from '../components/PwaInstallCard.vue'
+import PwaInstallGuideModal from '../components/PwaInstallGuideModal.vue'
 import { useRecommendation } from '../composables/useRecommendation.js'
 import { loadBootstrapData } from '../services/bootstrapData.js'
 import { getFooterState, FOOTER_MESSAGES } from '../utils/footerMessage.js'
@@ -628,6 +646,8 @@ const MEMO_SAVE_DEBOUNCE_MS = 500
 const FAVORITE_PULSE_MS = 260
 const BOOTH_TOUCH_HIGHLIGHT_MS = 180
 const VISITED_BREWERIES_KEY = 'visitedBreweries'
+const PWA_VISITED_BOOTH_KEY = 'hasVisitedBooth'
+const PWA_PROMPT_DISMISSED_KEY = 'pwaPromptDismissed'
 const REGION_NAME_SET = new Set(['上越', '中越', '下越', '佐渡'])
 
 const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
@@ -686,6 +706,15 @@ const brewerySource = ref([])
 const breweryScoresData = ref([])
 const breweryFlavorData = ref([])
 const visitedHistoryMap = ref({})
+const showPwaInstallCard = ref(false)
+const showPwaGuideModal = ref(false)
+const deferredInstallPromptEvent = ref(null)
+const pwaPromptPlatform = ref('other')
+const canShowPwaCardByHistory = ref(false)
+const pwaGuideSteps = [
+  '1. 画面下の共有ボタンをタップ',
+  '2. 「ホーム画面に追加」を選択'
+]
 
 const flavorAxes = {
   sweetDry: {
@@ -815,12 +844,125 @@ const aromaGradient = computed(() => `linear-gradient(to right, ${flavorAxes.aro
 const sweetDryBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(-2, 'sweetDry', false)}, ${interpolateColor(0, 'sweetDry', false)}, ${interpolateColor(2, 'sweetDry', false)})`)
 const lightRichBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(-2, 'lightRich', false)}, ${interpolateColor(0, 'lightRich', false)}, ${interpolateColor(2, 'lightRich', false)})`)
 const aromaBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(0, 'aroma', false)}, ${interpolateColor(2, 'aroma', false)}, ${interpolateColor(4, 'aroma', false)})`)
+const pwaCardTopText = computed(() => (
+  pwaPromptPlatform.value === 'android'
+    ? '会場でより快適にご利用いただくため'
+    : ''
+))
+const pwaCardBottomText = computed(() => (
+  pwaPromptPlatform.value === 'android'
+    ? 'アプリとして追加できます'
+    : 'ホーム画面に追加できます'
+))
+const pwaCardActionLabel = computed(() => (
+  pwaPromptPlatform.value === 'android'
+    ? 'アプリとして追加する'
+    : '追加方法を見る'
+))
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value))
 const easeOutQuint = (t) => 1 - Math.pow(1 - t, 5)
 const resolveExternalUrl = (url) => {
   if (!url) return '#'
   return /^https?:\/\//.test(url) ? url : `https://${url}`
+}
+
+const isStandaloneMode = () => {
+  if (typeof window === 'undefined') return false
+  const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches
+  const isiOSStandalone = ('standalone' in window.navigator) && window.navigator.standalone
+  return isDisplayModeStandalone || !!isiOSStandalone
+}
+
+const isIOSDevice = () => {
+  if (typeof navigator === 'undefined') return false
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+const isAndroidDevice = () => {
+  if (typeof navigator === 'undefined') return false
+  return /android/i.test(navigator.userAgent)
+}
+
+const detectPwaPromptPlatform = () => {
+  if (isIOSDevice()) return 'ios'
+  if (isAndroidDevice()) return 'android'
+  return 'other'
+}
+
+/*
+表示条件フロー:
+起動
+ -> standalone モード? yes: 非表示
+ -> pwaPromptDismissed === true ? yes: 非表示
+ -> hasVisitedBooth === true ? no: 非表示（初回アクセス）
+ -> 表示
+
+ブース初回タップ時:
+ -> hasVisitedBooth = true を保存
+ -> この起動中は再評価しない（次回起動で表示）
+*/
+const evaluatePwaCardVisibilityOnLaunch = () => {
+  if (typeof window === 'undefined') return false
+  const platform = detectPwaPromptPlatform()
+  if (platform === 'other') return false
+  if (isStandaloneMode()) return false
+  if (localStorage.getItem(PWA_PROMPT_DISMISSED_KEY) === 'true') return false
+  if (localStorage.getItem(PWA_VISITED_BOOTH_KEY) !== 'true') return false
+  return true
+}
+
+const markHasVisitedBooth = () => {
+  if (typeof window === 'undefined') return
+  if (localStorage.getItem(PWA_VISITED_BOOTH_KEY) === 'true') return
+  localStorage.setItem(PWA_VISITED_BOOTH_KEY, 'true')
+}
+
+const dismissPwaInstallCard = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(PWA_PROMPT_DISMISSED_KEY, 'true')
+  }
+  showPwaInstallCard.value = false
+  showPwaGuideModal.value = false
+}
+
+const onBeforeInstallPrompt = (event) => {
+  event.preventDefault()
+  deferredInstallPromptEvent.value = event
+  if (pwaPromptPlatform.value === 'android' && canShowPwaCardByHistory.value) {
+    showPwaInstallCard.value = true
+  }
+}
+
+const onAppInstalled = () => {
+  deferredInstallPromptEvent.value = null
+  showPwaInstallCard.value = false
+}
+
+const openPwaInstallGuide = async () => {
+  if (isIOSDevice()) {
+    showPwaGuideModal.value = true
+    return
+  }
+
+  if (isAndroidDevice() && deferredInstallPromptEvent.value) {
+    const promptEvent = deferredInstallPromptEvent.value
+    try {
+      promptEvent.prompt()
+      const result = await promptEvent.userChoice
+      if (result?.outcome === 'accepted') {
+        dismissPwaInstallCard()
+        deferredInstallPromptEvent.value = null
+        return
+      }
+      showPwaInstallCard.value = false
+    } catch {
+      // noop
+    }
+    deferredInstallPromptEvent.value = null
+    return
+  }
 }
 
 const interpolateColor = (val, axis, forHeatmap = true) => {
@@ -1810,6 +1952,7 @@ const scheduleFocusRecalc = (smooth = false) => {
 const selectBooth = (booth) => {
   if (!booth || booth.isEmpty) return
 
+  markHasVisitedBooth()
   triggerBoothTouchHighlight(booth.id)
   overviewAnchorBoothId.value = null
   const sameBooth = selectedBoothId.value === booth.id
@@ -2109,11 +2252,18 @@ watch(showDetailPanel, async () => {
 })
 
 onMounted(async () => {
+  pwaPromptPlatform.value = detectPwaPromptPlatform()
+  window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+  window.addEventListener('appinstalled', onAppInstalled)
+
   await prepareDataSources()
   initMap()
   loadBoothStates()
   await nextTick()
   centerOverview(false)
+  canShowPwaCardByHistory.value = evaluatePwaCardVisibilityOnLaunch()
+  showPwaInstallCard.value = pwaPromptPlatform.value === 'ios' && canShowPwaCardByHistory.value
+  if (pwaPromptPlatform.value === 'android' && canShowPwaCardByHistory.value && deferredInstallPromptEvent.value) showPwaInstallCard.value = true
   window.addEventListener('resize', onResize, { passive: true })
 })
 
@@ -2123,6 +2273,8 @@ onUnmounted(() => {
   clearMemoSaveTimer()
   clearFavoritePulseTimer()
   clearBoothTouchHighlightTimer()
+  window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+  window.removeEventListener('appinstalled', onAppInstalled)
   window.removeEventListener('resize', onResize)
 })
 </script>
@@ -3336,5 +3488,16 @@ onUnmounted(() => {
 .rec-fade-leave-to {
   opacity: 0;
   transform: translateY(4px);
+}
+
+.pwa-fade-enter-active,
+.pwa-fade-leave-active {
+  transition: opacity 0.26s ease, transform 0.26s ease;
+}
+
+.pwa-fade-enter-from,
+.pwa-fade-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
 }
 </style>

@@ -30,7 +30,7 @@ const MESSAGES = [
   '今日の一杯を探しています…'
 ]
 
-const loadingBgUrl = new URL('../../loading.png', import.meta.url).href
+const loadingBgUrl = new URL('../../loading.webp', import.meta.url).href
 const loadingMessage = MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
 
 const viewStyle = computed(() => ({
