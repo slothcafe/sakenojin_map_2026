@@ -612,6 +612,7 @@ import PwaInstallCard from '../components/PwaInstallCard.vue'
 import PwaInstallGuideModal from '../components/PwaInstallGuideModal.vue'
 import { useRecommendation } from '../composables/useRecommendation.js'
 import { loadBootstrapData } from '../services/bootstrapData.js'
+import { getStorageItem, setStorageItem } from '../services/persistentStorage.js'
 import { getFooterState, FOOTER_MESSAGES } from '../utils/footerMessage.js'
 
 const BOOTH_SIZE = 64
@@ -903,25 +904,29 @@ const detectPwaPromptPlatform = () => {
  -> hasVisitedBooth = true を保存
  -> この起動中は再評価しない（次回起動で表示）
 */
-const evaluatePwaCardVisibilityOnLaunch = () => {
+const evaluatePwaCardVisibilityOnLaunch = async () => {
   if (typeof window === 'undefined') return false
   const platform = detectPwaPromptPlatform()
   if (platform === 'other') return false
   if (isStandaloneMode()) return false
-  if (localStorage.getItem(PWA_PROMPT_DISMISSED_KEY) === 'true') return false
-  if (localStorage.getItem(PWA_VISITED_BOOTH_KEY) !== 'true') return false
+  const [dismissed, visitedBooth] = await Promise.all([
+    getStorageItem(PWA_PROMPT_DISMISSED_KEY),
+    getStorageItem(PWA_VISITED_BOOTH_KEY)
+  ])
+  if (dismissed === 'true') return false
+  if (visitedBooth !== 'true') return false
   return true
 }
 
-const markHasVisitedBooth = () => {
+const markHasVisitedBooth = async () => {
   if (typeof window === 'undefined') return
-  if (localStorage.getItem(PWA_VISITED_BOOTH_KEY) === 'true') return
-  localStorage.setItem(PWA_VISITED_BOOTH_KEY, 'true')
+  if (await getStorageItem(PWA_VISITED_BOOTH_KEY) === 'true') return
+  await setStorageItem(PWA_VISITED_BOOTH_KEY, 'true')
 }
 
 const dismissPwaInstallCard = () => {
   if (typeof window !== 'undefined') {
-    localStorage.setItem(PWA_PROMPT_DISMISSED_KEY, 'true')
+    void setStorageItem(PWA_PROMPT_DISMISSED_KEY, 'true')
   }
   showPwaInstallCard.value = false
   showPwaGuideModal.value = false
@@ -1305,10 +1310,10 @@ const normalizeStateMap = (parsed) => {
   return { normalized, shouldRewrite }
 }
 
-const buildLegacyStateMap = () => {
+const buildLegacyStateMap = async () => {
   const visitedIds = new Set()
 
-  const visitedBreweries = localStorage.getItem(VISITED_BREWERIES_KEY)
+  const visitedBreweries = await getStorageItem(VISITED_BREWERIES_KEY)
   if (visitedBreweries) {
     try {
       const parsed = JSON.parse(visitedBreweries)
@@ -1327,7 +1332,7 @@ const buildLegacyStateMap = () => {
     }
   }
 
-  const sakeVisited = localStorage.getItem('sake_visited')
+  const sakeVisited = await getStorageItem('sake_visited')
   if (sakeVisited) {
     try {
       const parsed = JSON.parse(sakeVisited)
@@ -1415,11 +1420,11 @@ const saveVisitedHistory = () => {
   const records = Object.values(visitedHistoryMap.value).sort((a, b) =>
     new Date(a.visitedAt).getTime() - new Date(b.visitedAt).getTime()
   )
-  localStorage.setItem(VISITED_BREWERIES_KEY, JSON.stringify(records))
+  void setStorageItem(VISITED_BREWERIES_KEY, JSON.stringify(records))
 }
 
-const loadVisitedHistory = () => {
-  const raw = localStorage.getItem(VISITED_BREWERIES_KEY)
+const loadVisitedHistory = async () => {
+  const raw = await getStorageItem(VISITED_BREWERIES_KEY)
   if (!raw) {
     visitedHistoryMap.value = {}
     return false
@@ -1521,17 +1526,17 @@ const triggerLightHaptic = () => {
 }
 
 const saveBoothStates = ({ withHaptics = false } = {}) => {
-  localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(boothStates.value))
+  void setStorageItem(LOCAL_STATE_KEY, JSON.stringify(boothStates.value))
   if (withHaptics) {
     triggerLightHaptic()
   }
 }
 
-const loadBoothStates = () => {
+const loadBoothStates = async () => {
   let loaded = {}
   let shouldRewrite = false
 
-  const stored = localStorage.getItem(LOCAL_STATE_KEY)
+  const stored = await getStorageItem(LOCAL_STATE_KEY)
   if (stored) {
     try {
       const parsed = JSON.parse(stored)
@@ -1544,7 +1549,7 @@ const loadBoothStates = () => {
   }
 
   if (!Object.keys(loaded).length) {
-    const legacy = buildLegacyStateMap()
+    const legacy = await buildLegacyStateMap()
     if (Object.keys(legacy).length) {
       loaded = legacy
       shouldRewrite = true
@@ -1555,7 +1560,7 @@ const loadBoothStates = () => {
   if (ensureAllBoothStates()) {
     shouldRewrite = true
   }
-  const shouldRewriteHistory = loadVisitedHistory()
+  const shouldRewriteHistory = await loadVisitedHistory()
   const syncedHistory = syncVisitedHistoryWithState()
   if (shouldRewrite) {
     saveBoothStates()
@@ -1952,7 +1957,7 @@ const scheduleFocusRecalc = (smooth = false) => {
 const selectBooth = (booth) => {
   if (!booth || booth.isEmpty) return
 
-  markHasVisitedBooth()
+  void markHasVisitedBooth()
   triggerBoothTouchHighlight(booth.id)
   overviewAnchorBoothId.value = null
   const sameBooth = selectedBoothId.value === booth.id
@@ -2258,10 +2263,10 @@ onMounted(async () => {
 
   await prepareDataSources()
   initMap()
-  loadBoothStates()
+  await loadBoothStates()
   await nextTick()
   centerOverview(false)
-  canShowPwaCardByHistory.value = evaluatePwaCardVisibilityOnLaunch()
+  canShowPwaCardByHistory.value = await evaluatePwaCardVisibilityOnLaunch()
   showPwaInstallCard.value = pwaPromptPlatform.value === 'ios' && canShowPwaCardByHistory.value
   if (pwaPromptPlatform.value === 'android' && canShowPwaCardByHistory.value && deferredInstallPromptEvent.value) showPwaInstallCard.value = true
   window.addEventListener('resize', onResize, { passive: true })

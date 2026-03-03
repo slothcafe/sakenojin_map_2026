@@ -5,12 +5,13 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getStorageItem } from '../services/persistentStorage.js'
 
 const VISITED_KEY = 'niigata_sakenojin_visited'
 const router = useRouter()
 
-onMounted(() => {
-  const visited = localStorage.getItem(VISITED_KEY)
+onMounted(async () => {
+  const visited = await getStorageItem(VISITED_KEY)
   if (!visited) {
     router.replace('/title')
   } else {

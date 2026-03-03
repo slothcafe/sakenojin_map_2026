@@ -19,6 +19,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLogo from '../components/AppLogo.vue'
+import { setStorageItem } from '../services/persistentStorage.js'
 
 const VISITED_KEY = 'niigata_sakenojin_visited'
 const router = useRouter()
@@ -30,11 +31,11 @@ const viewStyle = computed(() => ({
   backgroundImage: `url(${titleBgUrl})`
 }))
 
-const handleStart = () => {
+const handleStart = async () => {
   if (isRouting.value) return
 
   isRouting.value = true
-  localStorage.setItem(VISITED_KEY, 'true')
+  await setStorageItem(VISITED_KEY, 'true')
   router.replace('/map')
 }
 </script>

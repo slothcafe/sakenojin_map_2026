@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getStorageItem } from '../services/persistentStorage.js'
 
 import LoadingView from '../views/LoadingView.vue'
 import MapView from '../views/MapView.vue'
@@ -10,9 +11,10 @@ const routes = [
   {
     path: '/',
     component: TitleView,
-    beforeEnter: () => {
+    beforeEnter: async () => {
       if (typeof window === 'undefined') return true
-      return localStorage.getItem(VISITED_KEY) ? '/loading' : true
+      const visited = await getStorageItem(VISITED_KEY)
+      return visited ? '/loading' : true
     }
   },
   {

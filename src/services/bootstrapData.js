@@ -1,3 +1,4 @@
+import { getStorageItems } from './persistentStorage.js'
 const LOCAL_STATE_KEY = 'sakenojin_state_v1'
 
 let cachedBootstrapData = null
@@ -14,7 +15,7 @@ const safeParse = (raw, fallback) => {
 }
 
 export const loadHistoryData = async () => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  if (typeof window === 'undefined') {
     return {
       state: {},
       visitedBreweries: [],
@@ -22,10 +23,16 @@ export const loadHistoryData = async () => {
     }
   }
 
+  const stored = await getStorageItems([
+    LOCAL_STATE_KEY,
+    'visitedBreweries',
+    'sake_visited'
+  ])
+
   return {
-    state: safeParse(localStorage.getItem(LOCAL_STATE_KEY), {}),
-    visitedBreweries: safeParse(localStorage.getItem('visitedBreweries'), []),
-    sakeVisited: safeParse(localStorage.getItem('sake_visited'), {})
+    state: safeParse(stored[LOCAL_STATE_KEY], {}),
+    visitedBreweries: safeParse(stored.visitedBreweries, []),
+    sakeVisited: safeParse(stored.sake_visited, {})
   }
 }
 
