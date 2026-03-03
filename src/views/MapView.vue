@@ -1058,6 +1058,7 @@ const attachBreweries = () => {
       rawName,
       region: regionId,
       regionName: regionNameJa,
+      municipality: b['市町村'] || '',
       taste,
       address: b['住所'] || '',
       brand: b['代表銘柄'] || '',

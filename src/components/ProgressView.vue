@@ -5,6 +5,8 @@
         :totalVisited="totalVisited"
         :totalBreweries="TOTAL_BREWERIES"
         :regionStats="regionStats"
+        :breweries="breweries"
+        :visitedHistoryRecords="visitedHistoryRecords"
         @timelineTap="scrollToTimeline"
         @regionTap="onSummaryRegionTap"
       />
