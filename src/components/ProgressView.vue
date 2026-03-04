@@ -35,10 +35,29 @@
       />
     </section>
 
-    <section class="layer-card reset-layer">
-      <button class="reset-history-btn" type="button" @click="$emit('resetVisited')">
-        履歴リセット
-      </button>
+    <section class="layer-card data-management-layer">
+      <h2 class="section-title">データ管理</h2>
+      <div class="data-management-actions">
+        <button class="data-action-btn" type="button" @click="$emit('exportBackup')">
+          データを書き出す
+        </button>
+        <button class="data-action-btn" type="button" @click="openImportFileDialog">
+          データを読み込む
+        </button>
+        <button class="data-action-btn danger" type="button" @click="$emit('resetVisited')">
+          巡歴を削除する
+        </button>
+      </div>
+      <input
+        ref="importFileInputRef"
+        class="import-file-input"
+        type="file"
+        accept="application/json,.json"
+        @change="onImportFileChange"
+      >
+      <p class="data-management-note">
+        機種変更や再インストール前に書き出しておくことをおすすめします。
+      </p>
     </section>
   </div>
 </template>
@@ -73,10 +92,11 @@ const props = defineProps({
   }
 })
 
-defineEmits(['resetVisited'])
+const emit = defineEmits(['resetVisited', 'exportBackup', 'importBackup'])
 
 const timelineSectionRef = ref(null)
 const regionSectionRef = ref(null)
+const importFileInputRef = ref(null)
 const activeRegion = ref(null)
 const highlightedRegion = ref(null)
 const highlightTimer = ref(null)
@@ -163,6 +183,21 @@ const toggleRegion = (region) => {
   activeRegion.value = activeRegion.value === region ? null : region
 }
 
+const openImportFileDialog = () => {
+  importFileInputRef.value?.click()
+}
+
+const onImportFileChange = (event) => {
+  const input = event.target
+  const [file] = input?.files || []
+  if (file) {
+    emit('importBackup', file)
+  }
+  if (input) {
+    input.value = ''
+  }
+}
+
 onUnmounted(() => {
   clearHighlightTimer()
 })
@@ -209,21 +244,44 @@ onUnmounted(() => {
   font-weight: 700;
 }
 
-.reset-layer {
+.data-management-layer {
   padding: var(--space-16);
 }
 
-.reset-history-btn {
+.data-management-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.data-action-btn {
   width: 100%;
   border: 1px solid rgba(184, 153, 71, 0.4);
   background: linear-gradient(180deg, #fdfbee, #fafaea);
   color: #8a7335;
-  border-radius: 999px;
+  border-radius: 12px;
   font-size: 14px;
   font-family: "Noto Sans JP", sans-serif;
   font-weight: 600;
   padding: 12px var(--space-16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  text-align: left;
+}
+
+.data-action-btn.danger {
+  color: #7d4e34;
+  border-color: rgba(160, 112, 80, 0.4);
+}
+
+.import-file-input {
+  display: none;
+}
+
+.data-management-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-subtle);
 }
 
 @media (max-width: 420px) {

@@ -9,8 +9,8 @@
       ×
     </button>
 
-    <p v-if="topText" class="pwa-text">{{ topText }}</p>
-    <p class="pwa-text emphasis">{{ bottomText }}</p>
+    <h3 v-if="topText" class="pwa-title">{{ topText }}</h3>
+    <p class="pwa-text">{{ bottomText }}</p>
 
     <button type="button" class="pwa-guide-btn" @click="$emit('showGuide')">
       {{ actionLabel }}
@@ -84,9 +84,14 @@ defineEmits(['dismiss', 'showGuide'])
   font-family: "Noto Sans JP", sans-serif;
 }
 
-.pwa-text.emphasis {
-  font-weight: 600;
-  letter-spacing: 0.03em;
+.pwa-title {
+  margin: 0 0 4px;
+  color: #4f3a21;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
 }
 
 .pwa-guide-btn {

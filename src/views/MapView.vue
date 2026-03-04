@@ -451,7 +451,20 @@
           :visitedHistoryRecords="visitedHistoryRecords"
           :breweryCoordinates="breweryCoordinates"
           @resetVisited="resetVisited"
+          @exportBackup="exportBackupAsJson"
+          @importBackup="importBackupFromJson"
         />
+        <transition name="pwa-fade">
+          <div v-if="showPwaInstallCard" class="progress-install-card-wrap">
+            <PwaInstallCard
+              :top-text="pwaCardTopText"
+              :bottom-text="pwaCardBottomText"
+              :action-label="pwaCardActionLabel"
+              @dismiss="dismissPwaInstallCard"
+              @showGuide="openPwaInstallGuide"
+            />
+          </div>
+        </transition>
       </main>
     </section>
 
@@ -459,6 +472,12 @@
       v-model="showPwaGuideModal"
       :steps="pwaGuideSteps"
     />
+
+    <transition name="toast-fade">
+      <p v-if="toastMessage" class="app-toast" role="status" aria-live="polite">
+        {{ toastMessage }}
+      </p>
+    </transition>
 
     <transition name="panel-slide">
       <div
@@ -560,7 +579,7 @@
               </div>
             </dl>
 
-            <div v-if="panelExpanded" class="memo-section">
+            <div v-if="panelVisualExpanded" class="memo-section">
               <h3 class="memo-title">メモ</h3>
               <textarea
                 class="memo-textarea"
@@ -641,7 +660,11 @@ const PANEL_DRAG_CLOSE_THRESHOLD = 84
 const PANEL_DRAG_EXPAND_THRESHOLD = 48
 const PANEL_DRAG_PREVIEW_THRESHOLD = 20
 const PANEL_DRAG_ACTIVATION_THRESHOLD = 6
+const MAP_SCROLL_BOTTOM_PADDING = 16
 const LOCAL_STATE_KEY = 'sakenojin_state_v1'
+const BACKUP_VERSION = 1
+const BACKUP_FILE_NAME = 'sakenojin-backup.json'
+const TOAST_DURATION_MS = 2200
 const MEMO_MAX_LENGTH = 200
 const MEMO_SAVE_DEBOUNCE_MS = 500
 const FAVORITE_PULSE_MS = 260
@@ -700,7 +723,6 @@ const pointerState = ref(null)
 const panelExpanded = ref(false)
 const panelDragOffsetPx = ref(0)
 const panelDragState = ref(null)
-const overviewAnchorBoothId = ref(null)
 const mapAnimationRafId = ref(null)
 const mapRecalcTimerId = ref(null)
 const brewerySource = ref([])
@@ -709,13 +731,9 @@ const breweryFlavorData = ref([])
 const visitedHistoryMap = ref({})
 const showPwaInstallCard = ref(false)
 const showPwaGuideModal = ref(false)
-const deferredInstallPromptEvent = ref(null)
 const pwaPromptPlatform = ref('other')
-const canShowPwaCardByHistory = ref(false)
-const pwaGuideSteps = [
-  '1. 画面下の共有ボタンをタップ',
-  '2. 「ホーム画面に追加」を選択'
-]
+const toastMessage = ref('')
+const toastTimerId = ref(null)
 
 const flavorAxes = {
   sweetDry: {
@@ -810,9 +828,19 @@ const heatmapMaxLabel = computed(() => {
   return '辛口'
 })
 
+const getPanelAwareBottomInset = (panelAware = true) => {
+  if (!panelAware) return 0
+  if (!isMapLikeView.value || !selectedBoothId.value) return 0
+  const overlap = Math.max(panelOverlapPx.value, estimatePanelOverlap())
+  return Math.max(0, overlap + MAP_SCROLL_BOTTOM_PADDING)
+}
+
+const getScaledCanvasHeight = (scale, { panelAware = true } = {}) =>
+  mapHeight * scale + getPanelAwareBottomInset(panelAware)
+
 const mapCanvasFrameStyle = computed(() => ({
   width: `${mapWidth * mapScale.value}px`,
-  height: `${mapHeight * mapScale.value}px`
+  height: `${getScaledCanvasHeight(mapScale.value, { panelAware: true })}px`
 }))
 
 const mapSvgStyle = computed(() => ({
@@ -845,19 +873,15 @@ const aromaGradient = computed(() => `linear-gradient(to right, ${flavorAxes.aro
 const sweetDryBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(-2, 'sweetDry', false)}, ${interpolateColor(0, 'sweetDry', false)}, ${interpolateColor(2, 'sweetDry', false)})`)
 const lightRichBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(-2, 'lightRich', false)}, ${interpolateColor(0, 'lightRich', false)}, ${interpolateColor(2, 'lightRich', false)})`)
 const aromaBarGradient = computed(() => `linear-gradient(to right, ${interpolateColor(0, 'aroma', false)}, ${interpolateColor(2, 'aroma', false)}, ${interpolateColor(4, 'aroma', false)})`)
-const pwaCardTopText = computed(() => (
-  pwaPromptPlatform.value === 'android'
-    ? '会場でより快適にご利用いただくため'
-    : ''
-))
+const pwaCardTopText = computed(() => '酒の陣をもっと快適に')
 const pwaCardBottomText = computed(() => (
   pwaPromptPlatform.value === 'android'
-    ? 'アプリとして追加できます'
-    : 'ホーム画面に追加できます'
+    ? 'ホーム画面に追加すると、アプリのように使えます。'
+    : 'ホーム画面に追加すると、いつでもすぐに巡れます。'
 ))
 const pwaCardActionLabel = computed(() => (
   pwaPromptPlatform.value === 'android'
-    ? 'アプリとして追加する'
+    ? '追加するには？'
     : '追加方法を見る'
 ))
 
@@ -892,29 +916,25 @@ const detectPwaPromptPlatform = () => {
   return 'other'
 }
 
-/*
-表示条件フロー:
-起動
- -> standalone モード? yes: 非表示
- -> pwaPromptDismissed === true ? yes: 非表示
- -> hasVisitedBooth === true ? no: 非表示（初回アクセス）
- -> 表示
+const pwaGuideSteps = computed(() => (
+  pwaPromptPlatform.value === 'android'
+    ? [
+        '1. 右上のメニューをタップ',
+        '2. 「ホーム画面に追加」を選択'
+      ]
+    : [
+        '1. 画面下の共有ボタンをタップ',
+        '2. 「ホーム画面に追加」を選択'
+      ]
+))
 
-ブース初回タップ時:
- -> hasVisitedBooth = true を保存
- -> この起動中は再評価しない（次回起動で表示）
-*/
 const evaluatePwaCardVisibilityOnLaunch = async () => {
   if (typeof window === 'undefined') return false
   const platform = detectPwaPromptPlatform()
   if (platform === 'other') return false
   if (isStandaloneMode()) return false
-  const [dismissed, visitedBooth] = await Promise.all([
-    getStorageItem(PWA_PROMPT_DISMISSED_KEY),
-    getStorageItem(PWA_VISITED_BOOTH_KEY)
-  ])
+  const dismissed = await getStorageItem(PWA_PROMPT_DISMISSED_KEY)
   if (dismissed === 'true') return false
-  if (visitedBooth !== 'true') return false
   return true
 }
 
@@ -932,42 +952,13 @@ const dismissPwaInstallCard = () => {
   showPwaGuideModal.value = false
 }
 
-const onBeforeInstallPrompt = (event) => {
-  event.preventDefault()
-  deferredInstallPromptEvent.value = event
-  if (pwaPromptPlatform.value === 'android' && canShowPwaCardByHistory.value) {
-    showPwaInstallCard.value = true
-  }
-}
-
 const onAppInstalled = () => {
-  deferredInstallPromptEvent.value = null
   showPwaInstallCard.value = false
 }
 
-const openPwaInstallGuide = async () => {
-  if (isIOSDevice()) {
-    showPwaGuideModal.value = true
-    return
-  }
-
-  if (isAndroidDevice() && deferredInstallPromptEvent.value) {
-    const promptEvent = deferredInstallPromptEvent.value
-    try {
-      promptEvent.prompt()
-      const result = await promptEvent.userChoice
-      if (result?.outcome === 'accepted') {
-        dismissPwaInstallCard()
-        deferredInstallPromptEvent.value = null
-        return
-      }
-      showPwaInstallCard.value = false
-    } catch {
-      // noop
-    }
-    deferredInstallPromptEvent.value = null
-    return
-  }
+const openPwaInstallGuide = () => {
+  if (pwaPromptPlatform.value === 'other') return
+  showPwaGuideModal.value = true
 }
 
 const interpolateColor = (val, axis, forHeatmap = true) => {
@@ -1570,6 +1561,136 @@ const loadBoothStates = async () => {
   }
 }
 
+const sortVisitedHistoryRecords = (records) =>
+  [...records].sort((a, b) => new Date(a.visitedAt).getTime() - new Date(b.visitedAt).getTime())
+
+const parseJsonOrFallback = (raw, fallback) => {
+  if (typeof raw !== 'string') return fallback
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return fallback
+  }
+}
+
+const clearToastTimer = () => {
+  if (toastTimerId.value !== null) {
+    clearTimeout(toastTimerId.value)
+    toastTimerId.value = null
+  }
+}
+
+const showToast = (message) => {
+  clearToastTimer()
+  toastMessage.value = message
+  toastTimerId.value = setTimeout(() => {
+    toastMessage.value = ''
+    toastTimerId.value = null
+  }, TOAST_DURATION_MS)
+}
+
+const exportBackupAsJson = async () => {
+  if (typeof window === 'undefined') return
+
+  clearMemoSaveTimer()
+  await Promise.all([
+    setStorageItem(LOCAL_STATE_KEY, JSON.stringify(boothStates.value)),
+    setStorageItem(VISITED_BREWERIES_KEY, JSON.stringify(sortVisitedHistoryRecords(Object.values(visitedHistoryMap.value))))
+  ])
+
+  const [stateRaw, historyRaw, visitedBoothRaw, promptDismissedRaw] = await Promise.all([
+    getStorageItem(LOCAL_STATE_KEY),
+    getStorageItem(VISITED_BREWERIES_KEY),
+    getStorageItem(PWA_VISITED_BOOTH_KEY),
+    getStorageItem(PWA_PROMPT_DISMISSED_KEY)
+  ])
+
+  const normalizedStates = normalizeStateMap(parseJsonOrFallback(stateRaw, {})).normalized
+  const normalizedHistoryMap = normalizeVisitedHistoryRecords(parseJsonOrFallback(historyRaw, [])).normalized
+  const backupPayload = {
+    version: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    data: {
+      boothStates: normalizedStates,
+      visitedHistory: sortVisitedHistoryRecords(Object.values(normalizedHistoryMap)),
+      flags: {
+        hasVisitedBooth: visitedBoothRaw === 'true',
+        pwaPromptDismissed: promptDismissedRaw === 'true'
+      }
+    }
+  }
+
+  const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' })
+  const downloadUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = downloadUrl
+  link.download = BACKUP_FILE_NAME
+  link.click()
+  URL.revokeObjectURL(downloadUrl)
+}
+
+const importBackupFromJson = async (file) => {
+  if (!(file instanceof File)) return
+
+  let parsed
+  try {
+    parsed = JSON.parse(await file.text())
+  } catch {
+    showToast('JSONを読み込めませんでした')
+    return
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    showToast('バックアップ形式が不正です')
+    return
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(parsed, 'version')) {
+    showToast('versionがないバックアップは読み込めません')
+    return
+  }
+
+  const parsedVersion = Number(parsed.version)
+  if (!Number.isFinite(parsedVersion) || parsedVersion !== BACKUP_VERSION) {
+    showToast(`未対応のバックアップ形式です（version: ${String(parsed.version)}）`)
+    return
+  }
+
+  const data = parsed.data && typeof parsed.data === 'object' && !Array.isArray(parsed.data)
+    ? parsed.data
+    : {}
+  const boothStatesSource = data.boothStates && typeof data.boothStates === 'object' && !Array.isArray(data.boothStates)
+    ? data.boothStates
+    : {}
+  const visitedHistorySource = Array.isArray(data.visitedHistory) ? data.visitedHistory : []
+  const flags = data.flags && typeof data.flags === 'object' && !Array.isArray(data.flags)
+    ? data.flags
+    : {}
+
+  const normalizedStates = normalizeStateMap(boothStatesSource).normalized
+  const normalizedHistoryMap = normalizeVisitedHistoryRecords(visitedHistorySource).normalized
+  const normalizedHistoryRecords = sortVisitedHistoryRecords(Object.values(normalizedHistoryMap))
+
+  await Promise.all([
+    setStorageItem(LOCAL_STATE_KEY, JSON.stringify(normalizedStates)),
+    setStorageItem(VISITED_BREWERIES_KEY, JSON.stringify(normalizedHistoryRecords))
+  ])
+
+  if (typeof flags.hasVisitedBooth === 'boolean') {
+    await setStorageItem(PWA_VISITED_BOOTH_KEY, flags.hasVisitedBooth ? 'true' : 'false')
+  }
+  if (typeof flags.pwaPromptDismissed === 'boolean') {
+    await setStorageItem(PWA_PROMPT_DISMISSED_KEY, flags.pwaPromptDismissed ? 'true' : 'false')
+  }
+
+  await loadBoothStates()
+  showPwaInstallCard.value = await evaluatePwaCardVisibilityOnLaunch()
+  showPwaGuideModal.value = false
+  selectedBoothId.value = null
+  memoDraft.value = ''
+  showToast('読み込みました')
+}
+
 const mapBoothsWithBreweryData = computed(() => {
   return baseBooths.value.map(booth => {
     if (booth.isEmpty) {
@@ -1792,13 +1913,14 @@ const cancelRecalcTimer = () => {
   }
 }
 
-const animateMapState = ({ targetScale, targetLeft, targetTop, targetOffsetY, smooth = true }) => {
+const animateMapState = ({ targetScale, targetLeft, targetTop, targetOffsetY, smooth = true, panelAware = true }) => {
   const viewport = mapViewportRef.value
   if (!viewport) return
 
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const finalMaxScrollLeft = Math.max(0, mapWidth * targetScale - viewport.clientWidth)
-  const finalMaxScrollTop = Math.max(0, mapHeight * targetScale - viewport.clientHeight)
+  const finalCanvasHeight = getScaledCanvasHeight(targetScale, { panelAware })
+  const finalMaxScrollTop = Math.max(0, finalCanvasHeight - viewport.clientHeight)
   const resolvedTargetLeft = clamp(targetLeft, 0, finalMaxScrollLeft)
   const resolvedTargetTop = clamp(targetTop, 0, finalMaxScrollTop)
 
@@ -1829,7 +1951,8 @@ const animateMapState = ({ targetScale, targetLeft, targetTop, targetOffsetY, sm
     const nextLeftRaw = startLeft + (resolvedTargetLeft - startLeft) * eased
     const nextTopRaw = startTop + (resolvedTargetTop - startTop) * eased
     const currentMaxScrollLeft = Math.max(0, mapWidth * nextScale - viewport.clientWidth)
-    const currentMaxScrollTop = Math.max(0, mapHeight * nextScale - viewport.clientHeight)
+    const currentCanvasHeight = getScaledCanvasHeight(nextScale, { panelAware })
+    const currentMaxScrollTop = Math.max(0, currentCanvasHeight - viewport.clientHeight)
 
     mapScale.value = nextScale
     mapOffsetY.value = nextOffsetY
@@ -1855,7 +1978,7 @@ const centerOverview = (smooth = true) => {
   if (!viewport) return
 
   const scaledWidth = mapWidth * OVERVIEW_SCALE
-  const scaledHeight = mapHeight * OVERVIEW_SCALE
+  const scaledHeight = getScaledCanvasHeight(OVERVIEW_SCALE, { panelAware: false })
   const maxScrollLeft = Math.max(0, scaledWidth - viewport.clientWidth)
   const maxScrollTop = Math.max(0, scaledHeight - viewport.clientHeight)
   const targetLeft = maxScrollLeft / 2
@@ -1869,7 +1992,8 @@ const centerOverview = (smooth = true) => {
     targetLeft,
     targetTop,
     targetOffsetY: centeredOffsetY,
-    smooth
+    smooth,
+    panelAware: false
   })
 }
 
@@ -1878,7 +2002,7 @@ const centerOnBooth = (booth, { smooth = true, targetScale = FOCUSED_SCALE, pane
   if (!viewport || !booth) return
 
   const scaledWidth = mapWidth * targetScale
-  const scaledHeight = mapHeight * targetScale
+  const scaledHeight = getScaledCanvasHeight(targetScale, { panelAware })
 
   const centerX = (booth.x + BOOTH_SIZE / 2) * targetScale
   const centerY = (booth.y + BOOTH_SIZE / 2) * targetScale
@@ -1903,11 +2027,15 @@ const centerOnBooth = (booth, { smooth = true, targetScale = FOCUSED_SCALE, pane
     targetTop = clamp(centerY - targetY, 0, maxScrollTop)
     targetOffsetY = 0
   } else {
-    const centeredOffset = (viewport.clientHeight - scaledHeight) / 2
-    const travel = panelAware ? Math.max(24, panelOverlapPx.value * 0.75) : 100
-    const minOffset = centeredOffset - travel
-    const maxOffset = centeredOffset + 24
-    targetOffsetY = clamp(unclampedOffset, minOffset, maxOffset)
+    const centeredOffset = Math.max(0, (viewport.clientHeight - scaledHeight) / 2)
+    if (!panelAware) {
+      targetOffsetY = centeredOffset
+    } else {
+      const travel = Math.max(24, panelOverlapPx.value * 0.75)
+      const minOffset = centeredOffset - travel
+      const maxOffset = centeredOffset + 24
+      targetOffsetY = clamp(unclampedOffset, minOffset, maxOffset)
+    }
     targetTop = 0
   }
 
@@ -1916,7 +2044,8 @@ const centerOnBooth = (booth, { smooth = true, targetScale = FOCUSED_SCALE, pane
     targetLeft,
     targetTop,
     targetOffsetY,
-    smooth
+    smooth,
+    panelAware
   })
 }
 
@@ -1930,18 +2059,6 @@ const focusCurrentSelection = (smooth = true) => {
       panelAware: true
     })
     return
-  }
-
-  if (overviewAnchorBoothId.value) {
-    const anchoredBooth = validBooths.value.find(b => b.id === overviewAnchorBoothId.value && !b.isEmpty)
-    if (anchoredBooth) {
-      centerOnBooth(anchoredBooth, {
-        smooth,
-        targetScale: OVERVIEW_SCALE,
-        panelAware: false
-      })
-      return
-    }
   }
 
   centerOverview(smooth)
@@ -1959,7 +2076,6 @@ const selectBooth = (booth) => {
 
   void markHasVisitedBooth()
   triggerBoothTouchHighlight(booth.id)
-  overviewAnchorBoothId.value = null
   const sameBooth = selectedBoothId.value === booth.id
   if (!sameBooth) {
     panelExpanded.value = false
@@ -1978,7 +2094,6 @@ const closeDetailPanel = () => {
   panelExpanded.value = false
   panelDragOffsetPx.value = 0
   panelDragState.value = null
-  overviewAnchorBoothId.value = selectedBoothId.value
   selectedBoothId.value = null
 }
 
@@ -2212,7 +2327,6 @@ const resetVisited = () => {
     visitedHistoryMap.value = {}
     saveBoothStates({ withHaptics: true })
     saveVisitedHistory()
-    overviewAnchorBoothId.value = null
     selectedBoothId.value = null
   }
 }
@@ -2258,7 +2372,6 @@ watch(showDetailPanel, async () => {
 
 onMounted(async () => {
   pwaPromptPlatform.value = detectPwaPromptPlatform()
-  window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
   window.addEventListener('appinstalled', onAppInstalled)
 
   await prepareDataSources()
@@ -2266,9 +2379,7 @@ onMounted(async () => {
   await loadBoothStates()
   await nextTick()
   centerOverview(false)
-  canShowPwaCardByHistory.value = await evaluatePwaCardVisibilityOnLaunch()
-  showPwaInstallCard.value = pwaPromptPlatform.value === 'ios' && canShowPwaCardByHistory.value
-  if (pwaPromptPlatform.value === 'android' && canShowPwaCardByHistory.value && deferredInstallPromptEvent.value) showPwaInstallCard.value = true
+  showPwaInstallCard.value = await evaluatePwaCardVisibilityOnLaunch()
   window.addEventListener('resize', onResize, { passive: true })
 })
 
@@ -2278,7 +2389,7 @@ onUnmounted(() => {
   clearMemoSaveTimer()
   clearFavoritePulseTimer()
   clearBoothTouchHighlightTimer()
-  window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+  clearToastTimer()
   window.removeEventListener('appinstalled', onAppInstalled)
   window.removeEventListener('resize', onResize)
 })
@@ -2860,6 +2971,12 @@ onUnmounted(() => {
   -webkit-overflow-scrolling: touch;
   padding: var(--space-16);
   animation: tabFadeIn 0.3s ease;
+}
+
+.progress-install-card-wrap {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding-bottom: 8px;
 }
 
 .favorites-page {
@@ -3504,5 +3621,33 @@ onUnmounted(() => {
 .pwa-fade-leave-to {
   opacity: 0;
   transform: translateY(6px);
+}
+
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(133, 110, 67, 0.3);
+  background: rgba(45, 36, 23, 0.92);
+  color: #fff8ea;
+  font-size: 12px;
+  line-height: 1.4;
+  z-index: 80;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.16);
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 6px);
 }
 </style>
