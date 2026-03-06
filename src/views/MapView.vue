@@ -4,7 +4,7 @@
     <header class="app-header">
       <div class="header-inner">
         <div class="title-block">
-          <h1>酒の陣めぐり帖</h1>
+          <h1>酒の陣 めぐり帖</h1>
           <p>にいがた酒の陣 2026</p>
         </div>
         <div class="header-metrics" aria-live="polite">
@@ -366,7 +366,7 @@
 
         <transition name="pwa-fade">
           <PwaInstallCard
-            v-if="!isZoomed && showPwaInstallCard"
+            v-if="currentView === 'map' && !isZoomed && showMapPwaInstallCard"
             :top-text="pwaCardTopText"
             :bottom-text="pwaCardBottomText"
             :action-label="pwaCardActionLabel"
@@ -455,12 +455,12 @@
           @importBackup="importBackupFromJson"
         />
         <transition name="pwa-fade">
-          <div v-if="showPwaInstallCard" class="progress-install-card-wrap">
+          <div v-if="showProgressPwaInstallCard" class="progress-install-card-wrap">
             <PwaInstallCard
               :top-text="pwaCardTopText"
               :bottom-text="pwaCardBottomText"
               :action-label="pwaCardActionLabel"
-              @dismiss="dismissPwaInstallCard"
+              :show-dismiss-button="false"
               @showGuide="openPwaInstallGuide"
             />
           </div>
@@ -672,6 +672,7 @@ const BOOTH_TOUCH_HIGHLIGHT_MS = 180
 const VISITED_BREWERIES_KEY = 'visitedBreweries'
 const PWA_VISITED_BOOTH_KEY = 'hasVisitedBooth'
 const PWA_PROMPT_DISMISSED_KEY = 'pwaPromptDismissed'
+const PWA_APP_VISIT_COUNT_KEY = 'pwaAppVisitCount'
 const REGION_NAME_SET = new Set(['上越', '中越', '下越', '佐渡'])
 
 const mapWidth = BLOCKS_X * (INNER_COLS * BOOTH_SIZE) + (BLOCKS_X - 1) * BLOCK_GAP_X
@@ -729,9 +730,10 @@ const brewerySource = ref([])
 const breweryScoresData = ref([])
 const breweryFlavorData = ref([])
 const visitedHistoryMap = ref({})
-const showPwaInstallCard = ref(false)
+const showMapPwaInstallCard = ref(false)
 const showPwaGuideModal = ref(false)
 const pwaPromptPlatform = ref('other')
+const isSecondOrLaterAppVisit = ref(false)
 const toastMessage = ref('')
 const toastTimerId = ref(null)
 
@@ -928,11 +930,34 @@ const pwaGuideSteps = computed(() => (
       ]
 ))
 
-const evaluatePwaCardVisibilityOnLaunch = async () => {
+const showProgressPwaInstallCard = computed(() => (
+  pwaPromptPlatform.value !== 'other' && !isStandaloneMode()
+))
+
+const parseNonNegativeInteger = (value) => {
+  const numeric = Number.parseInt(value ?? '', 10)
+  if (!Number.isFinite(numeric) || numeric < 0) return 0
+  return numeric
+}
+
+const getPwaAppVisitCount = async () => {
+  const raw = await getStorageItem(PWA_APP_VISIT_COUNT_KEY)
+  return parseNonNegativeInteger(raw)
+}
+
+const markCurrentAppVisit = async () => {
+  const currentCount = await getPwaAppVisitCount()
+  const nextCount = currentCount + 1
+  await setStorageItem(PWA_APP_VISIT_COUNT_KEY, String(nextCount))
+  return nextCount
+}
+
+const evaluateMapPwaCardVisibility = async () => {
   if (typeof window === 'undefined') return false
   const platform = detectPwaPromptPlatform()
   if (platform === 'other') return false
   if (isStandaloneMode()) return false
+  if (!isSecondOrLaterAppVisit.value) return false
   const dismissed = await getStorageItem(PWA_PROMPT_DISMISSED_KEY)
   if (dismissed === 'true') return false
   return true
@@ -948,12 +973,12 @@ const dismissPwaInstallCard = () => {
   if (typeof window !== 'undefined') {
     void setStorageItem(PWA_PROMPT_DISMISSED_KEY, 'true')
   }
-  showPwaInstallCard.value = false
+  showMapPwaInstallCard.value = false
   showPwaGuideModal.value = false
 }
 
 const onAppInstalled = () => {
-  showPwaInstallCard.value = false
+  showMapPwaInstallCard.value = false
 }
 
 const openPwaInstallGuide = () => {
@@ -1598,11 +1623,12 @@ const exportBackupAsJson = async () => {
     setStorageItem(VISITED_BREWERIES_KEY, JSON.stringify(sortVisitedHistoryRecords(Object.values(visitedHistoryMap.value))))
   ])
 
-  const [stateRaw, historyRaw, visitedBoothRaw, promptDismissedRaw] = await Promise.all([
+  const [stateRaw, historyRaw, visitedBoothRaw, promptDismissedRaw, appVisitCountRaw] = await Promise.all([
     getStorageItem(LOCAL_STATE_KEY),
     getStorageItem(VISITED_BREWERIES_KEY),
     getStorageItem(PWA_VISITED_BOOTH_KEY),
-    getStorageItem(PWA_PROMPT_DISMISSED_KEY)
+    getStorageItem(PWA_PROMPT_DISMISSED_KEY),
+    getStorageItem(PWA_APP_VISIT_COUNT_KEY)
   ])
 
   const normalizedStates = normalizeStateMap(parseJsonOrFallback(stateRaw, {})).normalized
@@ -1615,7 +1641,8 @@ const exportBackupAsJson = async () => {
       visitedHistory: sortVisitedHistoryRecords(Object.values(normalizedHistoryMap)),
       flags: {
         hasVisitedBooth: visitedBoothRaw === 'true',
-        pwaPromptDismissed: promptDismissedRaw === 'true'
+        pwaPromptDismissed: promptDismissedRaw === 'true',
+        pwaAppVisitCount: parseNonNegativeInteger(appVisitCountRaw)
       }
     }
   }
@@ -1682,9 +1709,13 @@ const importBackupFromJson = async (file) => {
   if (typeof flags.pwaPromptDismissed === 'boolean') {
     await setStorageItem(PWA_PROMPT_DISMISSED_KEY, flags.pwaPromptDismissed ? 'true' : 'false')
   }
+  if (Number.isFinite(flags.pwaAppVisitCount) && flags.pwaAppVisitCount >= 0) {
+    await setStorageItem(PWA_APP_VISIT_COUNT_KEY, String(Math.floor(flags.pwaAppVisitCount)))
+  }
 
   await loadBoothStates()
-  showPwaInstallCard.value = await evaluatePwaCardVisibilityOnLaunch()
+  isSecondOrLaterAppVisit.value = (await getPwaAppVisitCount()) >= 2
+  showMapPwaInstallCard.value = await evaluateMapPwaCardVisibility()
   showPwaGuideModal.value = false
   selectedBoothId.value = null
   memoDraft.value = ''
@@ -2061,6 +2092,18 @@ const focusCurrentSelection = (smooth = true) => {
     return
   }
 
+  const lastTappedBooth = lastTappedBoothId.value
+    ? validBooths.value.find((booth) => booth.id === lastTappedBoothId.value && !booth.isEmpty)
+    : null
+  if (lastTappedBooth) {
+    centerOnBooth(lastTappedBooth, {
+      smooth,
+      targetScale: OVERVIEW_SCALE,
+      panelAware: false
+    })
+    return
+  }
+
   centerOverview(smooth)
 }
 
@@ -2373,13 +2416,15 @@ watch(showDetailPanel, async () => {
 onMounted(async () => {
   pwaPromptPlatform.value = detectPwaPromptPlatform()
   window.addEventListener('appinstalled', onAppInstalled)
+  const currentVisitCount = await markCurrentAppVisit()
+  isSecondOrLaterAppVisit.value = currentVisitCount >= 2
 
   await prepareDataSources()
   initMap()
   await loadBoothStates()
   await nextTick()
   centerOverview(false)
-  showPwaInstallCard.value = await evaluatePwaCardVisibilityOnLaunch()
+  showMapPwaInstallCard.value = await evaluateMapPwaCardVisibility()
   window.addEventListener('resize', onResize, { passive: true })
 })
 

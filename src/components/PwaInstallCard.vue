@@ -1,6 +1,7 @@
 <template>
   <article class="pwa-install-card" role="region" aria-label="ホーム画面追加案内">
     <button
+      v-if="showDismissButton"
       type="button"
       class="pwa-close-btn"
       aria-label="ホーム画面追加案内を閉じる"
@@ -31,6 +32,10 @@ defineProps({
   actionLabel: {
     type: String,
     default: '追加方法を見る'
+  },
+  showDismissButton: {
+    type: Boolean,
+    default: true
   }
 })
 

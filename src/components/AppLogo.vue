@@ -1,5 +1,5 @@
 <template>
-  <div class="app-logo" aria-label="酒の陣めぐり帖">
+  <div class="app-logo" aria-label="酒の陣 めぐり帖">
     <p class="logo-line">酒の陣</p>
     <p class="logo-line logo-line-bottom">めぐり帖</p>
   </div>
