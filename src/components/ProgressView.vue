@@ -22,7 +22,7 @@
 
     <section ref="timelineSectionRef" class="layer-card timeline-layer">
       <h2 class="section-title">訪問タイムライン</h2>
-      <VisitTimeline :records="visitedHistoryRecords" />
+      <VisitTimeline :records="timelineRecords" @memoTap="onTimelineMemoTap" />
     </section>
 
     <section ref="regionSectionRef" class="layer-card region-layer">
@@ -92,7 +92,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['resetVisited', 'exportBackup', 'importBackup'])
+const emit = defineEmits(['resetVisited', 'exportBackup', 'importBackup', 'openMemoForBrewery'])
 
 const timelineSectionRef = ref(null)
 const regionSectionRef = ref(null)
@@ -155,6 +155,24 @@ const hasVisitedRouteMap = computed(() => {
     return Number.isFinite(point?.x) && Number.isFinite(point?.y) && !Number.isNaN(visitedAtMs)
   })
 })
+
+const timelineRecords = computed(() => {
+  return props.visitedHistoryRecords.map((record) => {
+    const breweryId = String(record?.breweryId || '')
+    const memo = typeof props.visitRecords[breweryId]?.memo === 'string'
+      ? props.visitRecords[breweryId].memo
+      : ''
+    return {
+      ...record,
+      memo
+    }
+  })
+})
+
+const onTimelineMemoTap = (breweryId) => {
+  if (!breweryId) return
+  emit('openMemoForBrewery', String(breweryId))
+}
 
 const scrollToTimeline = () => {
   timelineSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })

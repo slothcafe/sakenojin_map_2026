@@ -453,6 +453,7 @@
           @resetVisited="resetVisited"
           @exportBackup="exportBackupAsJson"
           @importBackup="importBackupFromJson"
+          @openMemoForBrewery="openMemoFromTimeline"
         />
         <transition name="pwa-fade">
           <div v-if="showProgressPwaInstallCard" class="progress-install-card-wrap">
@@ -722,6 +723,7 @@ const mapOffsetY = ref(0)
 const panelOverlapPx = ref(0)
 const pointerState = ref(null)
 const panelExpanded = ref(false)
+const showProgressMemoPanel = ref(false)
 const panelDragOffsetPx = ref(0)
 const panelDragState = ref(null)
 const mapAnimationRafId = ref(null)
@@ -851,7 +853,10 @@ const mapSvgStyle = computed(() => ({
 }))
 
 const showDetailPanel = computed(() => {
-  const inDetailEnabledView = isMapLikeView.value || currentView.value === 'favorites'
+  const inDetailEnabledView =
+    isMapLikeView.value ||
+    currentView.value === 'favorites' ||
+    (currentView.value === 'progress' && showProgressMemoPanel.value)
   return inDetailEnabledView && !!selectedBooth.value && !selectedBooth.value.isEmpty
 })
 const isPanelDragging = computed(() => !!panelDragState.value)
@@ -2118,6 +2123,7 @@ const selectBooth = (booth) => {
   if (!booth || booth.isEmpty) return
 
   void markHasVisitedBooth()
+  showProgressMemoPanel.value = false
   triggerBoothTouchHighlight(booth.id)
   const sameBooth = selectedBoothId.value === booth.id
   if (!sameBooth) {
@@ -2133,7 +2139,31 @@ const selectBooth = (booth) => {
   }
 }
 
+const openMemoFromTimeline = (breweryId) => {
+  const key = String(breweryId || '')
+  if (!key) return
+
+  const memoText = typeof boothStates.value[key]?.memo === 'string'
+    ? boothStates.value[key].memo
+    : ''
+  if (!memoText.trim()) return
+
+  const booth = validBooths.value.find((item) => item.id === key && !item.isEmpty)
+  if (!booth) {
+    window.alert(memoText)
+    return
+  }
+
+  showProgressMemoPanel.value = true
+  panelExpanded.value = true
+  panelDragOffsetPx.value = 0
+  panelDragState.value = null
+  selectedBoothId.value = booth.id
+  lastTappedBoothId.value = booth.id
+}
+
 const closeDetailPanel = () => {
+  showProgressMemoPanel.value = false
   panelExpanded.value = false
   panelDragOffsetPx.value = 0
   panelDragState.value = null
@@ -2386,6 +2416,9 @@ watch(selectedBoothId, async (id) => {
 })
 
 watch(currentView, async (view) => {
+  if (view !== 'progress') {
+    showProgressMemoPanel.value = false
+  }
   if (view !== 'map' && view !== 'heatmap') return
   await nextTick()
   scheduleFocusRecalc(false)

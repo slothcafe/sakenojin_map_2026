@@ -8,12 +8,23 @@
       <section v-for="group in groups" :key="group.dateKey" class="timeline-group">
         <h3 class="timeline-date">{{ group.dateLabel }}</h3>
         <ul class="timeline-list">
-          <li v-for="item in group.items" :key="item.breweryId + item.visitedAt" class="timeline-item">
+          <li
+            v-for="item in group.items"
+            :key="item.breweryId + item.visitedAt"
+            class="timeline-item"
+            :class="{ 'is-clickable': item.hasMemo }"
+            @click="onItemTap(item)"
+          >
             <span class="timeline-dot" aria-hidden="true"></span>
-            <span class="timeline-time">{{ item.timeLabel }}</span>
-            <span class="timeline-booth">No.{{ item.breweryId }}</span>
-            <span class="timeline-name">{{ item.breweryName }}</span>
-            <span class="timeline-region">（{{ item.region }}）</span>
+            <div class="timeline-body">
+              <div class="timeline-line">
+                <span class="timeline-time">{{ item.timeLabel }}</span>
+                <span class="timeline-booth">No.{{ item.breweryId }}</span>
+                <span class="timeline-name">{{ item.breweryName }}</span>
+                <span class="timeline-region">（{{ item.region }}）</span>
+              </div>
+              <p v-if="item.hasMemo" class="timeline-memo-preview">{{ item.memoPreview }}</p>
+            </div>
           </li>
         </ul>
       </section>
@@ -24,17 +35,34 @@
 <script setup>
 import { computed } from 'vue'
 
+const MEMO_PREVIEW_LIMIT = 15
+
 const props = defineProps({
   records: {
     type: Array,
     default: () => []
   }
 })
+const emit = defineEmits(['memoTap'])
 
 const pad2 = (num) => String(num).padStart(2, '0')
 
 const toDateLabel = (date) => `${date.getFullYear()}/${pad2(date.getMonth() + 1)}/${pad2(date.getDate())}`
 const toTimeLabel = (date) => `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
+const normalizeMemo = (text) => String(text || '').replace(/\s+/g, ' ').trim()
+const getMemoPreview = (text) => {
+  const memo = normalizeMemo(text)
+  if (!memo) return ''
+  if (memo.length > MEMO_PREVIEW_LIMIT) {
+    return `${memo.slice(0, MEMO_PREVIEW_LIMIT)}…`
+  }
+  return memo
+}
+
+const onItemTap = (item) => {
+  if (!item?.hasMemo) return
+  emit('memoTap', item.breweryId)
+}
 
 const groups = computed(() => {
   const sorted = [...props.records]
@@ -61,7 +89,9 @@ const groups = computed(() => {
       breweryName: record.breweryName || '不明な酒造',
       region: record.region || '地域不明',
       visitedAt: record.visitedAt,
-      timeLabel: toTimeLabel(date)
+      timeLabel: toTimeLabel(date),
+      hasMemo: !!normalizeMemo(record.memo),
+      memoPreview: getMemoPreview(record.memo)
     })
   })
 
@@ -119,13 +149,20 @@ const groups = computed(() => {
 .timeline-item {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
   min-height: 24px;
   padding-left: 10px;
   font-size: 14px;
   line-height: 1.45;
   color: #2f2b23;
+}
+
+.timeline-item.is-clickable {
+  cursor: pointer;
+}
+
+.timeline-item.is-clickable:active {
+  opacity: 0.78;
 }
 
 .timeline-dot {
@@ -138,8 +175,21 @@ const groups = computed(() => {
   box-shadow: 0 0 0 2px rgba(250, 246, 236, 0.95);
 }
 
+.timeline-body {
+  min-width: 0;
+  width: 100%;
+}
+
+.timeline-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+}
+
 .timeline-time {
   width: 38px;
+  flex-shrink: 0;
   font-variant-numeric: tabular-nums;
   color: #64553a;
 }
@@ -164,5 +214,16 @@ const groups = computed(() => {
 .timeline-region {
   color: #76674b;
   font-size: 13px;
+}
+
+.timeline-memo-preview {
+  margin: 0 0 0 8px;
+  max-width: calc(100% - 8px);
+  color: #666;
+  font-size: 0.9em;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>
