@@ -1,7 +1,7 @@
 [
   {
     "id": "75",
-    "name": "サンプル酒造75号(株)",
+    "name": "サンプル酒造75",
     "absolute": {
       "sweetDry": 3.9,
       "lightRich": 2,
@@ -15,7 +15,7 @@
   },
   {
     "id": "68",
-    "name": "サンプル酒造68号(株)",
+    "name": "サンプル酒造68",
     "absolute": {
       "sweetDry": -4.4,
       "lightRich": -2.5,
@@ -29,7 +29,7 @@
   },
   {
     "id": "70",
-    "name": "サンプル酒造70号(株)",
+    "name": "サンプル酒造70",
     "absolute": {
       "sweetDry": 3.3,
       "lightRich": 0,
@@ -43,7 +43,7 @@
   },
   {
     "id": "71",
-    "name": "サンプル酒造71号(株)",
+    "name": "サンプル酒造71",
     "absolute": {
       "sweetDry": -2.2,
       "lightRich": -3,
@@ -57,7 +57,7 @@
   },
   {
     "id": "59",
-    "name": "サンプル酒造59号(株)",
+    "name": "サンプル酒造59",
     "absolute": {
       "sweetDry": -1.7,
       "lightRich": -1,
@@ -71,7 +71,7 @@
   },
   {
     "id": "72",
-    "name": "サンプル酒造72号(株)",
+    "name": "サンプル酒造72",
     "absolute": {
       "sweetDry": 1.7,
       "lightRich": 2.5,
@@ -85,7 +85,7 @@
   },
   {
     "id": "74",
-    "name": "サンプル酒造74号(株)",
+    "name": "サンプル酒造74",
     "absolute": {
       "sweetDry": 0,
       "lightRich": -3.5,
@@ -99,7 +99,7 @@
   },
   {
     "id": "78",
-    "name": "サンプル酒造78号(株)",
+    "name": "サンプル酒造78",
     "absolute": {
       "sweetDry": -3.3,
       "lightRich": 1.5,
@@ -113,7 +113,7 @@
   },
   {
     "id": "80",
-    "name": "サンプル酒造80号(株)",
+    "name": "サンプル酒造80",
     "absolute": {
       "sweetDry": 4.4,
       "lightRich": 4,
@@ -127,7 +127,7 @@
   },
   {
     "id": "55",
-    "name": "サンプル酒造55号(株)",
+    "name": "サンプル酒造55",
     "absolute": {
       "sweetDry": 1.7,
       "lightRich": 2.5,
@@ -141,7 +141,7 @@
   },
   {
     "id": "79",
-    "name": "サンプル酒造79号(株)",
+    "name": "サンプル酒造79",
     "absolute": {
       "sweetDry": 0.6,
       "lightRich": -1.5,
@@ -155,7 +155,7 @@
   },
   {
     "id": "63",
-    "name": "サンプル酒造63号(株)",
+    "name": "サンプル酒造63",
     "absolute": {
       "sweetDry": 4.4,
       "lightRich": 4,
@@ -169,7 +169,7 @@
   },
   {
     "id": "73",
-    "name": "サンプル酒造73号(株)",
+    "name": "サンプル酒造73",
     "absolute": {
       "sweetDry": -3.9,
       "lightRich": -0.5,
@@ -183,7 +183,7 @@
   },
   {
     "id": "62",
-    "name": "サンプル酒造62号(株)",
+    "name": "サンプル酒造62",
     "absolute": {
       "sweetDry": 0.6,
       "lightRich": -1.5,
@@ -197,7 +197,7 @@
   },
   {
     "id": "69",
-    "name": "サンプル酒造69号(株)",
+    "name": "サンプル酒造69",
     "absolute": {
       "sweetDry": -0.6,
       "lightRich": 3,
@@ -211,7 +211,7 @@
   },
   {
     "id": "77",
-    "name": "サンプル酒造77号(株)",
+    "name": "サンプル酒造77",
     "absolute": {
       "sweetDry": 2.2,
       "lightRich": -4,
@@ -225,7 +225,7 @@
   },
   {
     "id": "64",
-    "name": "サンプル酒造64号(株)",
+    "name": "サンプル酒造64",
     "absolute": {
       "sweetDry": -1.1,
       "lightRich": 1,
@@ -239,7 +239,7 @@
   },
   {
     "id": "60",
-    "name": "サンプル酒造60号(株)",
+    "name": "サンプル酒造60",
     "absolute": {
       "sweetDry": 2.2,
       "lightRich": -4,
@@ -253,7 +253,7 @@
   },
   {
     "id": "76",
-    "name": "サンプル酒造76号(株)",
+    "name": "サンプル酒造76",
     "absolute": {
       "sweetDry": -1.7,
       "lightRich": -1,
@@ -267,7 +267,7 @@
   },
   {
     "id": "57",
-    "name": "サンプル酒造57号(株)",
+    "name": "サンプル酒造57",
     "absolute": {
       "sweetDry": 0,
       "lightRich": -3.5,
@@ -281,7 +281,7 @@
   },
   {
     "id": "56",
-    "name": "サンプル酒造56号(株)",
+    "name": "サンプル酒造56",
     "absolute": {
       "sweetDry": -3.9,
       "lightRich": -0.5,
@@ -295,7 +295,7 @@
   },
   {
     "id": "65",
-    "name": "サンプル酒造65号(株)",
+    "name": "サンプル酒造65",
     "absolute": {
       "sweetDry": 2.8,
       "lightRich": -2,
@@ -309,7 +309,7 @@
   },
   {
     "id": "58",
-    "name": "サンプル酒造58号(株)",
+    "name": "サンプル酒造58",
     "absolute": {
       "sweetDry": 3.9,
       "lightRich": 2,
@@ -323,7 +323,7 @@
   },
   {
     "id": "81",
-    "name": "サンプル酒造81号(株)",
+    "name": "サンプル酒造81",
     "absolute": {
       "sweetDry": -1.1,
       "lightRich": 1,
@@ -337,7 +337,7 @@
   },
   {
     "id": "61",
-    "name": "サンプル酒造61号(株)",
+    "name": "サンプル酒造61",
     "absolute": {
       "sweetDry": -3.3,
       "lightRich": 1.5,
@@ -351,7 +351,7 @@
   },
   {
     "id": "41",
-    "name": "サンプル酒造41号(株)",
+    "name": "サンプル酒造41",
     "absolute": {
       "sweetDry": 3.9,
       "lightRich": 2,
@@ -365,7 +365,7 @@
   },
   {
     "id": "11",
-    "name": "サンプル酒造11号(株)",
+    "name": "サンプル酒造11",
     "absolute": {
       "sweetDry": 0.6,
       "lightRich": -1.5,
@@ -379,7 +379,7 @@
   },
   {
     "id": "27",
-    "name": "サンプル酒造27号(株)",
+    "name": "サンプル酒造27",
     "absolute": {
       "sweetDry": -3.3,
       "lightRich": 1.5,
@@ -393,7 +393,7 @@
   },
   {
     "id": "4",
-    "name": "サンプル酒造04号(株)",
+    "name": "サンプル酒造04",
     "absolute": {
       "sweetDry": 1.7,
       "lightRich": 2.5,
@@ -407,7 +407,7 @@
   },
   {
     "id": "2",
-    "name": "サンプル酒造02号(株)",
+    "name": "サンプル酒造02",
     "absolute": {
       "sweetDry": 3.3,
       "lightRich": 0,
@@ -421,7 +421,7 @@
   },
   {
     "id": "42",
-    "name": "サンプル酒造42号(株)",
+    "name": "サンプル酒造42",
     "absolute": {
       "sweetDry": -1.7,
       "lightRich": -1,
@@ -435,7 +435,7 @@
   },
   {
     "id": "29",
-    "name": "サンプル酒造29号(株)",
+    "name": "サンプル酒造29",
     "absolute": {
       "sweetDry": 4.4,
       "lightRich": 4,
@@ -449,7 +449,7 @@
   },
   {
     "id": "21",
-    "name": "サンプル酒造21号(株)",
+    "name": "サンプル酒造21",
     "absolute": {
       "sweetDry": 1.7,
       "lightRich": 2.5,
@@ -463,7 +463,7 @@
   },
   {
     "id": "26",
-    "name": "サンプル酒造26号(株)",
+    "name": "サンプル酒造26",
     "absolute": {
       "sweetDry": 2.2,
       "lightRich": -4,
@@ -477,7 +477,7 @@
   },
   {
     "id": "9",
-    "name": "サンプル酒造09号(株)",
+    "name": "サンプル酒造09",
     "absolute": {
       "sweetDry": 2.2,
       "lightRich": -4,
@@ -491,7 +491,7 @@
   },
   {
     "id": "24",
-    "name": "サンプル酒造24号(株)",
+    "name": "サンプル酒造24",
     "absolute": {
       "sweetDry": 3.9,
       "lightRich": 2,
@@ -505,7 +505,7 @@
   },
   {
     "id": "20",
-    "name": "サンプル酒造20号(株)",
+    "name": "サンプル酒造20",
     "absolute": {
       "sweetDry": -2.2,
       "lightRich": -3,
@@ -519,7 +519,7 @@
   },
   {
     "id": "8",
-    "name": "サンプル酒造08号(株)",
+    "name": "サンプル酒造08",
     "absolute": {
       "sweetDry": -1.7,
       "lightRich": -1,
@@ -533,7 +533,7 @@
   },
   {
     "id": "17",
-    "name": "サンプル酒造17号(株)",
+    "name": "サンプル酒造17",
     "absolute": {
       "sweetDry": -4.4,
       "lightRich": -2.5,
@@ -547,7 +547,7 @@
   },
   {
     "id": "1",
-    "name": "サンプル酒造01号(株)",
+    "name": "サンプル酒造01",
     "absolute": {
       "sweetDry": -0.6,
       "lightRich": 3,
@@ -561,7 +561,7 @@
   },
   {
     "id": "43",
-    "name": "サンプル酒造43号(株)",
+    "name": "サンプル酒造43",
     "absolute": {
       "sweetDry": 2.2,
       "lightRich": -4,
@@ -575,7 +575,7 @@
   },
   {
     "id": "28",
-    "name": "サンプル酒造28号(株)",
+    "name": "サンプル酒造28",
     "absolute": {
       "sweetDry": 0.6,
       "lightRich": -1.5,
@@ -589,7 +589,7 @@
   },
   {
     "id": "5",
-    "name": "サンプル酒造05号(株)",
+    "name": "サンプル酒造05",
     "absolute": {
       "sweetDry": -3.9,
       "lightRich": -0.5,
@@ -603,7 +603,7 @@
   },
   {
     "id": "12",
-    "name": "サンプル酒造12号(株)",
+    "name": "サンプル酒造12",
     "absolute": {
       "sweetDry": 4.4,
       "lightRich": 4,
@@ -617,7 +617,7 @@
   },
   {
     "id": "23",
-    "name": "サンプル酒造23号(株)",
+    "name": "サンプル酒造23",
     "absolute": {
       "sweetDry": 0,
       "lightRich": -3.5,
@@ -631,7 +631,7 @@
   },
   {
     "id": "22",
-    "name": "サンプル酒造22号(株)",
+    "name": "サンプル酒造22",
     "absolute": {
       "sweetDry": -3.9,
       "lightRich": -0.5,
@@ -645,7 +645,7 @@
   },
   {
     "id": "14",
-    "name": "サンプル酒造14号(株)",
+    "name": "サンプル酒造14",
     "absolute": {
       "sweetDry": 2.8,
       "lightRich": -2,
@@ -659,7 +659,7 @@
   },
   {
     "id": "16",
-    "name": "サンプル酒造16号(株)",
+    "name": "サンプル酒造16",
     "absolute": {
       "sweetDry": 1.1,
       "lightRich": 0.5,
@@ -673,7 +673,7 @@
   },
   {
     "id": "19",
-    "name": "サンプル酒造19号(株)",
+    "name": "サンプル酒造19",
     "absolute": {
       "sweetDry": 3.3,
       "lightRich": 0,
@@ -687,7 +687,7 @@
   },
   {
     "id": "15",
-    "name": "サンプル酒造15号(株)",
+    "name": "サンプル酒造15",
     "absolute": {
       "sweetDry": -2.8,
       "lightRich": 3.5,
@@ -701,7 +701,7 @@
   },
   {
     "id": "7",
-    "name": "サンプル酒造07号(株)",
+    "name": "サンプル酒造07",
     "absolute": {
       "sweetDry": 3.9,
       "lightRich": 2,
@@ -715,7 +715,7 @@
   },
   {
     "id": "25",
-    "name": "サンプル酒造25号(株)",
+    "name": "サンプル酒造25",
     "absolute": {
       "sweetDry": -1.7,
       "lightRich": -1,
@@ -729,7 +729,7 @@
   },
   {
     "id": "30",
-    "name": "サンプル酒造30号(株)",
+    "name": "サンプル酒造30",
     "absolute": {
       "sweetDry": -1.1,
       "lightRich": 1,
@@ -743,7 +743,7 @@
   },
   {
     "id": "3",
-    "name": "サンプル酒造03号(株)",
+    "name": "サンプル酒造03",
     "absolute": {
       "sweetDry": -2.2,
       "lightRich": -3,
@@ -757,7 +757,7 @@
   },
   {
     "id": "10",
-    "name": "サンプル酒造10号(株)",
+    "name": "サンプル酒造10",
     "absolute": {
       "sweetDry": -3.3,
       "lightRich": 1.5,
@@ -771,7 +771,7 @@
   },
   {
     "id": "18",
-    "name": "サンプル酒造18号(株)",
+    "name": "サンプル酒造18",
     "absolute": {
       "sweetDry": -0.6,
       "lightRich": 3,
@@ -785,7 +785,7 @@
   },
   {
     "id": "13",
-    "name": "サンプル酒造13号(株)",
+    "name": "サンプル酒造13",
     "absolute": {
       "sweetDry": -1.1,
       "lightRich": 1,
@@ -799,7 +799,7 @@
   },
   {
     "id": "6",
-    "name": "サンプル酒造06号(株)",
+    "name": "サンプル酒造06",
     "absolute": {
       "sweetDry": 0,
       "lightRich": -3.5,
@@ -813,7 +813,7 @@
   },
   {
     "id": "31",
-    "name": "サンプル酒造31号(株)",
+    "name": "サンプル酒造31",
     "absolute": {
       "sweetDry": 2.8,
       "lightRich": -2,
@@ -827,7 +827,7 @@
   },
   {
     "id": "49",
-    "name": "サンプル酒造49号(株)",
+    "name": "サンプル酒造49",
     "absolute": {
       "sweetDry": -2.8,
       "lightRich": 3.5,
@@ -841,7 +841,7 @@
   },
   {
     "id": "48",
-    "name": "サンプル酒造48号(株)",
+    "name": "サンプル酒造48",
     "absolute": {
       "sweetDry": 2.8,
       "lightRich": -2,
@@ -855,7 +855,7 @@
   },
   {
     "id": "50",
-    "name": "サンプル酒造50号(株)",
+    "name": "サンプル酒造50",
     "absolute": {
       "sweetDry": 1.1,
       "lightRich": 0.5,
@@ -869,7 +869,7 @@
   },
   {
     "id": "33",
-    "name": "サンプル酒造33号(株)",
+    "name": "サンプル酒造33",
     "absolute": {
       "sweetDry": 1.1,
       "lightRich": 0.5,
@@ -883,7 +883,7 @@
   },
   {
     "id": "53",
-    "name": "サンプル酒造53号(株)",
+    "name": "サンプル酒造53",
     "absolute": {
       "sweetDry": 3.3,
       "lightRich": 0,
@@ -897,7 +897,7 @@
   },
   {
     "id": "45",
-    "name": "サンプル酒造45号(株)",
+    "name": "サンプル酒造45",
     "absolute": {
       "sweetDry": 0.6,
       "lightRich": -1.5,
@@ -911,7 +911,7 @@
   },
   {
     "id": "39",
-    "name": "サンプル酒造39号(株)",
+    "name": "サンプル酒造39",
     "absolute": {
       "sweetDry": -3.9,
       "lightRich": -0.5,
@@ -925,7 +925,7 @@
   },
   {
     "id": "52",
-    "name": "サンプル酒造52号(株)",
+    "name": "サンプル酒造52",
     "absolute": {
       "sweetDry": -0.6,
       "lightRich": 3,
@@ -939,7 +939,7 @@
   },
   {
     "id": "32",
-    "name": "サンプル酒造32号(株)",
+    "name": "サンプル酒造32",
     "absolute": {
       "sweetDry": -2.8,
       "lightRich": 3.5,
@@ -953,7 +953,7 @@
   },
   {
     "id": "34",
-    "name": "サンプル酒造34号(株)",
+    "name": "サンプル酒造34",
     "absolute": {
       "sweetDry": -4.4,
       "lightRich": -2.5,
@@ -967,7 +967,7 @@
   },
   {
     "id": "37",
-    "name": "サンプル酒造37号(株)",
+    "name": "サンプル酒造37",
     "absolute": {
       "sweetDry": -2.2,
       "lightRich": -3,
@@ -981,7 +981,7 @@
   },
   {
     "id": "67",
-    "name": "サンプル酒造67号(株)",
+    "name": "サンプル酒造67",
     "absolute": {
       "sweetDry": 1.1,
       "lightRich": 0.5,
@@ -995,7 +995,7 @@
   },
   {
     "id": "35",
-    "name": "サンプル酒造35号(株)",
+    "name": "サンプル酒造35",
     "absolute": {
       "sweetDry": -0.6,
       "lightRich": 3,
@@ -1009,7 +1009,7 @@
   },
   {
     "id": "36",
-    "name": "サンプル酒造36号(株)",
+    "name": "サンプル酒造36",
     "absolute": {
       "sweetDry": 3.3,
       "lightRich": 0,
@@ -1023,7 +1023,7 @@
   },
   {
     "id": "51",
-    "name": "サンプル酒造51号(株)",
+    "name": "サンプル酒造51",
     "absolute": {
       "sweetDry": -4.4,
       "lightRich": -2.5,
@@ -1037,7 +1037,7 @@
   },
   {
     "id": "40",
-    "name": "サンプル酒造40号(株)",
+    "name": "サンプル酒造40",
     "absolute": {
       "sweetDry": 0,
       "lightRich": -3.5,
@@ -1051,7 +1051,7 @@
   },
   {
     "id": "47",
-    "name": "サンプル酒造47号(株)",
+    "name": "サンプル酒造47",
     "absolute": {
       "sweetDry": -1.1,
       "lightRich": 1,
@@ -1065,7 +1065,7 @@
   },
   {
     "id": "38",
-    "name": "サンプル酒造38号(株)",
+    "name": "サンプル酒造38",
     "absolute": {
       "sweetDry": 1.7,
       "lightRich": 2.5,
@@ -1079,7 +1079,7 @@
   },
   {
     "id": "46",
-    "name": "サンプル酒造46号(株)",
+    "name": "サンプル酒造46",
     "absolute": {
       "sweetDry": 4.4,
       "lightRich": 4,
@@ -1093,7 +1093,7 @@
   },
   {
     "id": "54",
-    "name": "サンプル酒造54号(株)",
+    "name": "サンプル酒造54",
     "absolute": {
       "sweetDry": -2.2,
       "lightRich": -3,
@@ -1107,7 +1107,7 @@
   },
   {
     "id": "82",
-    "name": "サンプル酒造82号(株)",
+    "name": "サンプル酒造82",
     "absolute": {
       "sweetDry": 2.8,
       "lightRich": -2,
@@ -1121,7 +1121,7 @@
   },
   {
     "id": "44",
-    "name": "サンプル酒造44号(株)",
+    "name": "サンプル酒造44",
     "absolute": {
       "sweetDry": -3.3,
       "lightRich": 1.5,
@@ -1135,7 +1135,7 @@
   },
   {
     "id": "66",
-    "name": "サンプル酒造66号(株)",
+    "name": "サンプル酒造66",
     "absolute": {
       "sweetDry": -2.8,
       "lightRich": 3.5,

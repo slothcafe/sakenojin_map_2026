@@ -38,9 +38,9 @@ export const loadHistoryData = async () => {
 
 export const loadBreweryData = async () => {
   const [breweriesModule, scoresModule, flavorModule] = await Promise.all([
-    import('../../niigata_sakenojin_breweries_list.json'),
-    import('../../brewery_scores.json'),
-    import('../../brewery_flavor.json')
+    import('../assets/data/breweries/niigata_sakenojin_breweries_list_sample.json'),
+    import('../assets/data/breweries/brewery_scores_sample.json'),
+    import('../assets/data/breweries/brewery_flavor_sample.json')
   ])
 
   return {

@@ -19,13 +19,12 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLogo from '../components/AppLogo.vue'
+import titleBgUrl from '../assets/images/backgrounds/title.webp'
 import { setStorageItem } from '../services/persistentStorage.js'
 
 const VISITED_KEY = 'niigata_sakenojin_visited'
 const router = useRouter()
 const isRouting = ref(false)
-
-const titleBgUrl = new URL('../../title.webp', import.meta.url).href
 
 const viewStyle = computed(() => ({
   backgroundImage: `url(${titleBgUrl})`

@@ -117,8 +117,8 @@
 
 <script setup>
 import { computed, onUnmounted, ref } from 'vue'
-import regionPaths from '../assets/niigata_region_paths.json'
-import municipalitiesGeoJson from '../../niigata_municipalities_map.json'
+import regionPaths from '../assets/data/maps/niigata_region_paths.json'
+import municipalitiesGeoJson from '../assets/data/maps/niigata_municipalities_map.json'
 
 const REGIONS = ['上越', '中越', '下越', '佐渡']
 const VIEWBOX_WIDTH = 300

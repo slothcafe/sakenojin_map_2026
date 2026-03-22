@@ -15,6 +15,7 @@
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppLogo from '../components/AppLogo.vue'
+import loadingBgUrl from '../assets/images/backgrounds/loading.webp'
 import {
   loadBreweryData,
   loadHistoryData,
@@ -30,7 +31,6 @@ const MESSAGES = [
   '今日の一杯を探しています…'
 ]
 
-const loadingBgUrl = new URL('../../loading.webp', import.meta.url).href
 const loadingMessage = MESSAGES[Math.floor(Math.random() * MESSAGES.length)]
 
 const viewStyle = computed(() => ({

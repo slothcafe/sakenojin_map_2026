@@ -59,6 +59,45 @@
         機種変更や再インストール前に書き出しておくことをおすすめします。
       </p>
     </section>
+
+    <div class="data-info-area">
+      <hr class="data-info-divider" />
+      <div class="data-info-content">
+        <button class="data-info-link" type="button" @click="isDataSourceModalOpen = true">
+          データ出典
+        </button>
+        <span class="data-info-version">version 1.0</span>
+      </div>
+    </div>
+
+    <!-- Data Source Modal -->
+    <div v-if="isDataSourceModalOpen" class="data-source-modal-overlay" @click="isDataSourceModalOpen = false">
+      <div class="data-source-modal-content" @click.stop>
+        <div class="modal-header">
+          <h3 class="modal-title">データ出典</h3>
+          <button class="modal-close-btn" type="button" @click="isDataSourceModalOpen = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="source-section">
+            <h4 class="source-title">地図データ</h4>
+            <p class="source-text">
+              「国土数値情報（行政区域データ）」<br>
+              （国土交通省 国土数値情報ダウンロードサイト）<br>
+              <a href="https://nlftp.mlit.go.jp/" target="_blank" rel="noopener">https://nlftp.mlit.go.jp/</a>
+            </p>
+            <p class="source-note">※上記サイトのデータを加工して作成しています</p>
+          </div>
+          <div class="source-section">
+            <h4 class="source-title">酒造情報</h4>
+            <p class="source-text">
+              「にいがた酒の陣」公式サイト<br>
+              <a href="https://www.niigata-sake.or.jp/sakenojin/" target="_blank" rel="noopener">https://www.niigata-sake.or.jp/sakenojin/</a>
+            </p>
+            <p class="source-note">※公式サイトの公開情報をもとに作成</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -100,6 +139,7 @@ const importFileInputRef = ref(null)
 const activeRegion = ref(null)
 const highlightedRegion = ref(null)
 const highlightTimer = ref(null)
+const isDataSourceModalOpen = ref(false)
 
 const { regionStats, totalVisited } = useProgressStats(
   computed(() => props.breweries),
@@ -306,5 +346,136 @@ onUnmounted(() => {
   .progress-view {
     gap: var(--space-16);
   }
+}
+
+.data-info-area {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.data-info-divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid rgba(184, 153, 71, 0.3);
+  margin: 0;
+}
+
+.data-info-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.data-info-link {
+  background: none;
+  border: none;
+  color: var(--ink-subtle);
+  font-size: 13px;
+  text-decoration: underline;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.data-info-version {
+  color: rgba(92, 92, 92, 0.6);
+  font-size: 12px;
+}
+
+/* Modal Styles */
+.data-source-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(42, 42, 42, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-20);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.data-source-modal-content {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-16) var(--space-20);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: "Shippori Mincho", "Noto Serif JP", serif;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--ink-subtle);
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+.modal-body {
+  padding: var(--space-20);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-24);
+}
+
+.source-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.source-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  border-left: 3px solid #8a7335;
+  padding-left: 8px;
+}
+
+.source-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-subtle);
+  line-height: 1.6;
+}
+
+.source-text a {
+  color: #0066cc;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.source-note {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(92, 92, 92, 0.8);
+  line-height: 1.4;
 }
 </style>

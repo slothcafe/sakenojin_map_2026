@@ -1,5 +1,22 @@
-# Vue 3 + Vite
+# sakenojin_map
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Vue 3 + Vite で構成された「にいがた酒の陣 2026 非公式ガイド」です。
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## Resource Layout
+
+- `src/assets/images/`: アプリで `import` して使う画像
+- `src/assets/data/`: アプリで `import` して使う JSON データ
+- `public/`: favicon や PWA アイコンなど、そのまま配信する静的ファイル
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+## Build
+
+```bash
+npm run build
+```
